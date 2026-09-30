@@ -1,0 +1,12 @@
+# Entorno virtual y sistema
+venv/
+__pycache__/
+.env
+
+# Base de datos local
+db.sqlite3
+
+# Archivos de IDE y sistema operativo
+.DS_Store
+Thumbs.db
+.vscode/

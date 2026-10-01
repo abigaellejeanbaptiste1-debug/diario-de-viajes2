@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Viaje, Dia, Actividad
-from .forms import DiaForm, ActividadForm
+from .forms import ViajeForm, DiaForm, ActividadForm
 
 def lista_viajes(request):
     if request.method == 'POST':

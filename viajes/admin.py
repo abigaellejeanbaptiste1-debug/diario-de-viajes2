@@ -1,7 +1,9 @@
 from django.contrib import admin
-from .models import Actividad, Dia, Viaje
+from .models import Actividad, Dia, Viaje, Photo, Companion
 
-# Enregistre tes modèles ici :
+
 admin.site.register(Viaje)
 admin.site.register(Dia)
 admin.site.register(Actividad)
+admin.site.register(Photo)
+admin.site.register(Companion)

@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import Viaje, Dia, Actividad
-from .forms import ViajeForm, DiaForm, ActividadForm
+from .models import Viaje, Dia, Actividad, Photo, Companion
+from .forms import ViajeForm, DiaForm, ActividadForm, PhotoForm, CompanionForm
 
 def lista_viajes(request):
     if request.method == 'POST':
@@ -52,3 +52,34 @@ def detalle_viaje(request, viaje_id):
         'form_actividad': form_actividad,
     }
     return render(request, 'viajes/detalle_viaje.html', context)
+
+def agregar_companion(request, viaje_id):
+  viaje = get_object_or_404(Viaje, pk=viaje_id)
+  if request.method == 'POST':
+    form = CompanionForm(request.POST)
+    if form.is_valid():
+      companion = form.save(commit=False)
+      companion.viaje = viaje
+      companion.save()
+      return redirect('detalle_viaje', viaje_id=viaje.id)
+  else:
+    form = CompanionForm()
+  return render(
+      request, 'viajes/agregar_companion.html', {'form': form, 'viaje': viaje}
+  )
+
+
+def agregar_photo(request, dia_id):
+  dia = get_object_or_404(Dia, pk=dia_id)
+  if request.method == 'POST':
+    form = PhotoForm(request.POST, request.FILES)
+    if form.is_valid():
+      photo = form.save(commit=False)
+      photo.dia = dia
+      photo.save()
+      return redirect('detalle_viaje', viaje_id=dia.viaje.id)
+  else:
+    form = PhotoForm()
+  return render(
+      request, 'viajes/agregar_photo.html', {'form': form, 'dia': dia}
+  )

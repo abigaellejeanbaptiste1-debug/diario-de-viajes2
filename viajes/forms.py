@@ -1,5 +1,5 @@
 from django import forms
-from .models import Viaje, Dia, Actividad
+from .models import Viaje, Dia, Actividad, Photo, Companion
 
 class ViajeForm(forms.ModelForm):
     class Meta:
@@ -46,3 +46,43 @@ class ActividadForm(forms.ModelForm):
             'hora': forms.TimeInput(attrs={'type': 'time'}),
             'descripcion': forms.Textarea(attrs={'rows': 3}),
         }
+
+class CompanionForm(forms.ModelForm):
+      class Meta:
+           model = Companion
+           fields = ['nombre', 'relacion', 'email']
+           widgets = {
+        'nombre': forms.TextInput(
+            attrs={
+                'class': 'form-control',
+                'placeholder': 'Nombre del acompañante',
+            }
+        ),
+        'relacion': forms.TextInput(
+            attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: Amigo, Familiar',
+            }
+        ),
+        'email': forms.EmailInput(
+            attrs={
+                'class': 'form-control',
+                'placeholder': 'correo@ejemplo.com',
+            }
+        ),
+    }
+
+
+class PhotoForm(forms.ModelForm):
+  class Meta:
+    model = Photo
+    fields = ['imagen', 'descripcion']
+    widgets = {
+        'imagen': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+        'descripcion': forms.TextInput(
+            attrs={
+                'class': 'form-control',
+                'placeholder': 'Breve descripción de la foto (opcional)',
+            }
+        ),
+    }

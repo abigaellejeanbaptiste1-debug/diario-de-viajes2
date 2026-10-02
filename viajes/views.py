@@ -124,10 +124,12 @@ def detalle_viaje(request, viaje_id):
     viaje = get_object_or_404(Viaje, pk=viaje_id)
     if not viaje.publico and not request.user.has_perm("viajes.view_viaje"):
         raise PermissionDenied("No tienes permiso para ver este viaje.")
-    dias = viaje.dias.prefetch_related("actividades").order_by("numero_dia")
+    dias = viaje.dias.prefetch_related("actividades", "gastos").order_by("numero_dia")
     gastos = viaje.gastos.all().order_by("-fecha")
 
     form_gasto = GastoForm()
+    form_gasto.fields["dia"].queryset = viaje.dias.order_by("numero_dia")
+    dia_gasto_id_formulario = None
     form_dia = DiaForm()
     form_actividad = ActividadForm()
     dia_id_formulario = None
@@ -150,6 +152,8 @@ def detalle_viaje(request, viaje_id):
 
     if request.method == "POST" and "form_gasto" in request.POST:
         form_gasto = GastoForm(request.POST)
+        form_gasto.fields["dia"].queryset = viaje.dias.order_by("numero_dia")
+        dia_gasto_id_formulario = request.POST.get("dia") or None
         if form_gasto.is_valid():
             nuevo_gasto = form_gasto.save(commit=False)
             nuevo_gasto.viaje = viaje
@@ -180,7 +184,9 @@ def detalle_viaje(request, viaje_id):
         "viaje": viaje,
         "dias": dias,
         "gastos": gastos,
+        "gastos_sin_dia": gastos.filter(dia__isnull=True),
         "form_gasto": form_gasto,
+        "dia_gasto_id_formulario": dia_gasto_id_formulario,
         "form_dia": form_dia,
         "form_actividad": form_actividad,
         "dia_id_formulario": dia_id_formulario,

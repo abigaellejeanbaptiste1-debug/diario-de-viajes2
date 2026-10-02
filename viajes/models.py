@@ -72,6 +72,13 @@ class Actividad(models.Model):
 
 class Gasto(models.Model):
     viaje = models.ForeignKey(Viaje, on_delete=models.CASCADE, related_name="gastos")
+    dia = models.ForeignKey(
+        Dia,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="gastos",
+    )
     categoria = models.CharField(max_length=100)
     monto = models.DecimalField(
         max_digits=12,

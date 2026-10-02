@@ -70,6 +70,68 @@ class PresupuestoViajeTests(TestCase):
         self.assertContains(detalle, "Control de gastos")
         self.assertContains(detalle, "$15.000 CLP")
 
+    def test_gasto_se_asocia_a_un_dia_y_se_muestra_en_el_itinerario(self):
+        dia = Dia.objects.create(
+            viaje=self.viaje,
+            numero_dia=1,
+            fecha="2026-12-10",
+            titulo="Llegada",
+        )
+
+        response = self.client.post(
+            reverse("detalle_viaje", args=[self.viaje.pk]),
+            {
+                "form_gasto": "1",
+                "dia": str(dia.pk),
+                "categoria": "Alojamiento",
+                "monto": "45000",
+                "fecha": "2026-12-10",
+                "concepto": "Hostal",
+                "moneda": "CLP",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        gasto = Gasto.objects.get(viaje=self.viaje)
+        self.assertEqual(gasto.dia, dia)
+
+        detalle = self.client.get(reverse("detalle_viaje", args=[self.viaje.pk]))
+        self.assertContains(detalle, "Gastos reales del día")
+        self.assertContains(detalle, "Hostal")
+        self.assertContains(detalle, "$45.000 CLP")
+
+    def test_gasto_no_puede_asociarse_a_un_dia_de_otro_viaje(self):
+        otro_viaje = Viaje.objects.create(
+            titulo="Otro viaje",
+            fecha_fin="2026-12-22",
+            pais="Chile",
+            ciudad="Natales",
+            presupuesto=Decimal("100000"),
+        )
+        dia_ajeno = Dia.objects.create(
+            viaje=otro_viaje,
+            numero_dia=1,
+            fecha="2026-12-21",
+            titulo="Día ajeno",
+        )
+
+        response = self.client.post(
+            reverse("detalle_viaje", args=[self.viaje.pk]),
+            {
+                "form_gasto": "1",
+                "dia": str(dia_ajeno.pk),
+                "categoria": "Comida",
+                "monto": "5000",
+                "fecha": "2026-12-10",
+                "concepto": "Almuerzo",
+                "moneda": "CLP",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("dia", response.context["form_gasto"].errors)
+        self.assertFalse(Gasto.objects.filter(viaje=self.viaje).exists())
+
     def test_formulario_acepta_solo_pesos_enteros_y_moneda_clp(self):
         datos = {
             "categoria": "Alojamiento",

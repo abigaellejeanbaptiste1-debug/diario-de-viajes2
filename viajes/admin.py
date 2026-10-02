@@ -15,9 +15,9 @@ class ViajeAdmin(admin.ModelAdmin):
 
 @admin.register(Gasto)
 class GastoAdmin(admin.ModelAdmin):
-    list_display = ("concepto", "viaje", "categoria", "monto_formato", "fecha")
+    list_display = ("concepto", "viaje", "dia", "categoria", "monto_formato", "fecha")
     search_fields = ("concepto", "categoria")
-    list_filter = ("categoria", "fecha")
+    list_filter = ("categoria", "fecha", "dia")
 
     @admin.display(description="Monto (CLP)")
     def monto_formato(self, obj):

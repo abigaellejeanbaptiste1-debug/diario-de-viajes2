@@ -52,7 +52,7 @@ class ViajeForm(forms.ModelForm):
 class GastoForm(forms.ModelForm):
     class Meta:
         model = Gasto
-        fields = ["categoria", "monto", "fecha", "concepto", "moneda"]
+        fields = ["dia", "categoria", "monto", "fecha", "concepto", "moneda"]
         widgets = {
             "categoria": forms.TextInput(
                 attrs={"class": "form-control", "placeholder": "Ej. Alojamiento, Comida"}

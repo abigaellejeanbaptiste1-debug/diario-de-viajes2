@@ -14,7 +14,6 @@ from .forms import (
     ActividadForm,
     CompanionForm,
     DiaForm,
-    GastoForm,
     PhotoForm,
     ViajeForm,
 )
@@ -124,19 +123,14 @@ def detalle_viaje(request, viaje_id):
     viaje = get_object_or_404(Viaje, pk=viaje_id)
     if not viaje.publico and not request.user.has_perm("viajes.view_viaje"):
         raise PermissionDenied("No tienes permiso para ver este viaje.")
-    dias = viaje.dias.prefetch_related("actividades", "gastos").order_by("numero_dia")
-    gastos = viaje.gastos.all().order_by("-fecha")
+    dias = viaje.dias.prefetch_related("actividades").order_by("numero_dia")
 
-    form_gasto = GastoForm()
-    form_gasto.fields["dia"].queryset = viaje.dias.order_by("numero_dia")
-    dia_gasto_id_formulario = None
     form_dia = DiaForm()
     form_actividad = ActividadForm()
     dia_id_formulario = None
 
     if request.method == "POST":
         permission_map = {
-            "form_gasto": "viajes.add_gasto",
             "form_dia": "viajes.add_dia",
             "form_actividad": "viajes.add_actividad",
         }
@@ -150,17 +144,7 @@ def detalle_viaje(request, viaje_id):
         if denied:
             return denied
 
-    if request.method == "POST" and "form_gasto" in request.POST:
-        form_gasto = GastoForm(request.POST)
-        form_gasto.fields["dia"].queryset = viaje.dias.order_by("numero_dia")
-        dia_gasto_id_formulario = request.POST.get("dia") or None
-        if form_gasto.is_valid():
-            nuevo_gasto = form_gasto.save(commit=False)
-            nuevo_gasto.viaje = viaje
-            nuevo_gasto.save()
-            messages.success(request, "Gasto registrado correctamente en el presupuesto.")
-            return redirect("detalle_viaje", viaje_id=viaje.pk)
-    elif request.method == "POST" and "form_dia" in request.POST:
+    if request.method == "POST" and "form_dia" in request.POST:
         form_dia = DiaForm(request.POST, request.FILES)
         if form_dia.is_valid():
             nuevo_dia = form_dia.save(commit=False)
@@ -183,10 +167,6 @@ def detalle_viaje(request, viaje_id):
     context = {
         "viaje": viaje,
         "dias": dias,
-        "gastos": gastos,
-        "gastos_sin_dia": gastos.filter(dia__isnull=True),
-        "form_gasto": form_gasto,
-        "dia_gasto_id_formulario": dia_gasto_id_formulario,
         "form_dia": form_dia,
         "form_actividad": form_actividad,
         "dia_id_formulario": dia_id_formulario,

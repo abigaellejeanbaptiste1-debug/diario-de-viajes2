@@ -177,16 +177,13 @@
             <div class="mx-margin md:mx-margin-tablet lg:mx-margin-desktop mb-space-md rounded-lg bg-secondary-fixed/50 p-space-sm text-primary"
                 role="status">{{ message }}</div>
             {% endfor %}
-            {% if form_gasto.errors %}
-            <div class="mx-margin md:mx-margin-tablet lg:mx-margin-desktop mb-space-md rounded-lg bg-error-container p-space-sm text-on-error-container" role="alert">{{ form_gasto.errors }}</div>
-            {% endif %}
             <section id="gastos" class="w-full px-margin md:px-margin-tablet lg:px-margin-desktop pb-space-lg">
                 <div class="rounded-xl bg-surface-container-lowest p-space-lg shadow-sm">
                     <div class="mb-space-md">
                         <div>
-                            <span class="font-label-sm text-label-sm uppercase tracking-wider text-secondary">Planifica y registra en un solo lugar</span>
-                            <h2 class="font-headline-md text-headline-md text-primary">Itinerario y Control de gastos</h2>
-                            <p class="font-body-sm text-body-sm text-on-surface-variant">Los costos de actividades son estimados; los gastos registrados son montos reales y se descuentan del presupuesto.</p>
+                            <span class="font-label-sm text-label-sm uppercase tracking-wider text-secondary">Itinerario y gastos conectados</span>
+                            <h2 class="font-headline-md text-headline-md text-primary">Control de gastos</h2>
+                            <p class="font-body-sm text-body-sm text-on-surface-variant">El gasto se calcula automáticamente sumando los costos de las actividades de cada día.</p>
                         </div>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-space-sm">
@@ -195,7 +192,7 @@
                             <span class="font-headline-sm text-headline-sm text-primary">{{ presupuesto_total_formateado }} CLP</span>
                         </div>
                         <div class="rounded-lg bg-surface-container-low p-space-md">
-                            <span class="block font-label-sm text-label-sm text-on-surface-variant">Gastos reales</span>
+                            <span class="block font-label-sm text-label-sm text-on-surface-variant">Gastos de actividades</span>
                             <span class="font-headline-sm text-headline-sm text-primary">{{ presupuesto_gastado_formateado }} CLP</span>
                         </div>
                         <div class="rounded-lg bg-surface-container-low p-space-md">
@@ -348,53 +345,9 @@
                                     <div class="flex items-center justify-between gap-space-sm">
                                         <h4 class="font-label-lg text-label-lg text-primary flex items-center gap-1.5">
                                             <span class="material-symbols-outlined text-secondary text-[1.125rem]">payments</span>
-                                            Gastos reales del día
+                                            Gastos del día · {{ dia.gastos_totales_formateados }} CLP
                                         </h4>
                                     </div>
-                                    {% if dia.gastos.all %}
-                                    <div class="mt-space-xs divide-y divide-surface-container">
-                                        {% for gasto in dia.gastos.all %}
-                                        <div class="flex flex-wrap items-center justify-between gap-space-sm py-space-xs">
-                                            <div>
-                                                <span class="font-label-md text-label-md text-primary">{{ gasto.concepto }}</span>
-                                                <span class="ml-2 font-body-sm text-body-sm text-on-surface-variant">{{ gasto.categoria }} · {{ gasto.fecha|date:"d M Y" }}</span>
-                                            </div>
-                                            <span class="font-label-md text-label-md text-primary">{{ gasto.monto_formateado }} CLP</span>
-                                        </div>
-                                        {% endfor %}
-                                    </div>
-                                    {% else %}
-                                    <p class="mt-space-xs font-body-sm text-body-sm text-on-surface-variant">Aún no hay gastos asociados a este día.</p>
-                                    {% endif %}
-                                    {% if perms.viajes.add_gasto %}
-                                    <details class="mt-space-sm rounded-lg bg-surface-container-low p-space-sm" {% if dia_gasto_id_formulario == dia.pk|stringformat:"s" and form_gasto.errors %}open{% endif %}>
-                                        <summary class="cursor-pointer font-label-md text-label-md text-secondary">Registrar gasto de este día</summary>
-                                        <form action="{% url 'detalle_viaje' viaje.pk %}" class="mt-space-sm grid grid-cols-1 sm:grid-cols-2 gap-space-sm" method="POST">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="form_gasto" value="1" />
-                                            <input type="hidden" name="dia" value="{{ dia.pk }}" />
-                                            <input type="hidden" name="moneda" value="CLP" />
-                                            {% if dia_gasto_id_formulario == dia.pk|stringformat:"s" and form_gasto.errors %}
-                                            <div class="sm:col-span-2 rounded-lg bg-error-container p-space-sm text-on-error-container" role="alert">{{ form_gasto.errors }}</div>
-                                            {% endif %}
-                                            <label class="font-label-sm text-label-sm text-on-surface">Concepto
-                                                <input class="mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-lowest" name="concepto" required maxlength="200" />
-                                            </label>
-                                            <label class="font-label-sm text-label-sm text-on-surface">Categoría
-                                                <input class="mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-lowest" name="categoria" required maxlength="100" />
-                                            </label>
-                                            <label class="font-label-sm text-label-sm text-on-surface">Monto (CLP)
-                                                <input class="mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-lowest" name="monto" type="number" min="0" step="1" required />
-                                            </label>
-                                            <label class="font-label-sm text-label-sm text-on-surface">Fecha
-                                                <input class="mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-lowest" name="fecha" type="date" value="{{ dia.fecha|date:'Y-m-d' }}" required />
-                                            </label>
-                                            <div class="sm:col-span-2 flex justify-end">
-                                                <button class="rounded-lg bg-secondary px-space-md py-2 font-label-md text-label-md text-on-primary" type="submit">Guardar gasto del día</button>
-                                            </div>
-                                        </form>
-                                    </details>
-                                    {% endif %}
                                 </section>
                                 {% for actividad in dia.actividades.all %}
                                 <div class="p-space-md rounded-lg bg-surface-container-low flex items-start justify-between gap-space-sm">
@@ -404,7 +357,7 @@
                                         {% if actividad.ubicacion %}<p class="font-body-sm text-body-sm text-on-surface-variant">{{ actividad.ubicacion }}</p>{% endif %}
                                         {% if actividad.descripcion %}<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">{{ actividad.descripcion }}</p>{% endif %}
                                     </div>
-                                    <span class="font-label-md text-label-md text-primary">{{ actividad.costo_formateado }} CLP estimado</span>
+                                    <span class="font-label-md text-label-md text-primary">{{ actividad.costo_formateado }} CLP</span>
                                 </div>
                                 {% empty %}
                                 <p class="font-body-sm text-body-sm text-on-surface-variant">Todavía no hay actividades para este día.</p>
@@ -447,61 +400,6 @@
                             {% empty %}
                             <p class="ml-6 md:ml-8 p-space-md bg-surface-container-lowest rounded-xl text-on-surface-variant">Todavía no hay días en este itinerario. Usa el formulario para agregar el primero.</p>
                             {% endfor %}
-                            {% if gastos_sin_dia or perms.viajes.add_gasto %}
-                            <section class="rounded-xl bg-surface-container-lowest p-space-lg shadow-sm">
-                                <div class="mb-space-sm">
-                                    <h3 class="font-headline-sm text-headline-sm text-primary">Gastos sin día asociado</h3>
-                                    <p class="font-body-sm text-body-sm text-on-surface-variant">Puedes registrarlos aquí o elegir un día para incorporarlos a su itinerario.</p>
-                                </div>
-                                {% for gasto in gastos_sin_dia %}
-                                <div class="flex flex-wrap items-center justify-between gap-space-sm border-t border-surface-container py-space-sm">
-                                    <div>
-                                        <span class="font-label-md text-label-md text-primary">{{ gasto.concepto }}</span>
-                                        <span class="ml-2 font-body-sm text-body-sm text-on-surface-variant">{{ gasto.categoria }} · {{ gasto.fecha|date:"d M Y" }}</span>
-                                    </div>
-                                    <span class="font-label-md text-label-md text-primary">{{ gasto.monto_formateado }} CLP</span>
-                                </div>
-                                {% empty %}
-                                <p class="font-body-sm text-body-sm text-on-surface-variant">No hay gastos pendientes de asociar.</p>
-                                {% endfor %}
-                                {% if perms.viajes.add_gasto %}
-                                <details class="mt-space-sm rounded-lg bg-surface-container-low p-space-md" {% if form_gasto.errors and not dia_gasto_id_formulario %}open{% endif %}>
-                                    <summary class="cursor-pointer font-label-md text-label-md text-secondary">Registrar otro gasto</summary>
-                                    <form action="{% url 'detalle_viaje' viaje.pk %}" class="mt-space-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-space-sm" method="POST">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="form_gasto" value="1" />
-                                        <input type="hidden" name="moneda" value="CLP" />
-                                        {% if form_gasto.errors and not dia_gasto_id_formulario %}
-                                        <div class="sm:col-span-2 lg:col-span-3 rounded-lg bg-error-container p-space-sm text-on-error-container" role="alert">{{ form_gasto.errors }}</div>
-                                        {% endif %}
-                                        <label class="font-label-sm text-label-sm text-on-surface">Concepto
-                                            <input class="mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-lowest" name="concepto" required maxlength="200" />
-                                        </label>
-                                        <label class="font-label-sm text-label-sm text-on-surface">Categoría
-                                            <input class="mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-lowest" name="categoria" required maxlength="100" />
-                                        </label>
-                                        <label class="font-label-sm text-label-sm text-on-surface">Monto (CLP)
-                                            <input class="mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-lowest" name="monto" type="number" min="0" step="1" required />
-                                        </label>
-                                        <label class="font-label-sm text-label-sm text-on-surface">Fecha
-                                            <input class="mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-lowest" name="fecha" type="date" required />
-                                        </label>
-                                        <label class="font-label-sm text-label-sm text-on-surface">Asociar a un día (opcional)
-                                            <select class="mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-lowest" name="dia">
-                                                <option value="">Sin asociar</option>
-                                                {% for dia_opcion in dias %}
-                                                <option value="{{ dia_opcion.pk }}">Día {{ dia_opcion.numero_dia }} · {{ dia_opcion.fecha|date:"d M Y" }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </label>
-                                        <div class="flex items-end">
-                                            <button class="w-full rounded-lg bg-secondary px-space-md py-2 font-label-md text-label-md text-on-primary" type="submit">Registrar gasto</button>
-                                        </div>
-                                    </form>
-                                </details>
-                                {% endif %}
-                            </section>
-                            {% endif %}
                             {% comment %}
                             <article
                                 class="relative flex flex-col gap-space-md bg-surface-container-lowest rounded-xl p-space-md md:p-space-lg shadow-sm ml-6 md:ml-8">

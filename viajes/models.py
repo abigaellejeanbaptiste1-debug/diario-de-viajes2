@@ -26,7 +26,9 @@ class Viaje(models.Model):
 
     @property
     def presupuesto_gastado(self):
-        total = self.gastos.aggregate(models.Sum("monto"))["monto__sum"]
+        total = self.dias.aggregate(models.Sum("actividades__costo"))[
+            "actividades__costo__sum"
+        ]
         return total if total is not None else Decimal("0.00")
 
     @property
@@ -45,6 +47,17 @@ class Dia(models.Model):
 
     def __str__(self):
         return f"Día {self.numero_dia}: {self.titulo}"
+
+    @property
+    def gastos_totales(self):
+        return sum(
+            (actividad.costo for actividad in self.actividades.all()),
+            Decimal("0.00"),
+        )
+
+    @property
+    def gastos_totales_formateados(self):
+        return format_clp(self.gastos_totales)
 
 
 class Actividad(models.Model):

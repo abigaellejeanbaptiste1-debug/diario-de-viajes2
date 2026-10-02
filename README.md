@@ -3,10 +3,12 @@
 Aplicación Django para registrar viajes, organizar días y actividades, controlar
 gastos en pesos chilenos y administrar los datos desde Django Admin.
 
-En el detalle de cada viaje, el itinerario y el control de gastos están
-integrados: puedes registrar gastos reales dentro del día correspondiente y
-compararlos con los costos estimados de las actividades. Los gastos existentes
-sin un día asociado siguen visibles y pueden asociarse a uno.
+En el detalle de cada viaje, el control de gastos se calcula automáticamente
+sumando el costo de sus actividades. Para registrar un gasto, agrégalo como una
+actividad en el día correspondiente; el total del día y el presupuesto gastado
+se actualizan desde esos costos, sin duplicar registros de gastos. Los registros
+manuales antiguos se conservan, pero ya no se cuentan en el presupuesto; añade
+el gasto como costo de una actividad si debe incluirse en los nuevos totales.
 
 ## Requisitos
 

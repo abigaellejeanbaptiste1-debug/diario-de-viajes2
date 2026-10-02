@@ -7,7 +7,7 @@ from django.urls import reverse
 
 from .forms import GastoForm
 from .money import format_clp
-from .models import Dia, Gasto, Viaje
+from .models import Actividad, Dia, Gasto, Viaje
 
 
 class PresupuestoViajeTests(TestCase):
@@ -26,27 +26,41 @@ class PresupuestoViajeTests(TestCase):
             presupuesto=Decimal("500000.00"),
         )
 
-    def test_presupuesto_gastado_suma_gastos_y_devuelve_cero_si_no_hay(self):
+    def test_presupuesto_gastado_suma_costos_de_actividades(self):
         self.assertEqual(self.viaje.presupuesto_gastado, Decimal("0.00"))
+
+        dia = Dia.objects.create(
+            viaje=self.viaje,
+            numero_dia=1,
+            fecha="2026-12-10",
+            titulo="Llegada",
+        )
+        Actividad.objects.create(
+            dia=dia,
+            nombre="Hostal",
+            hora="14:00",
+            costo=Decimal("45000"),
+        )
+        Actividad.objects.create(
+            dia=dia,
+            nombre="Cena",
+            hora="20:00",
+            costo=Decimal("12500"),
+        )
 
         Gasto.objects.create(
             viaje=self.viaje,
-            categoria="Alojamiento",
-            monto=Decimal("45000.00"),
+            categoria="Otros",
+            monto=Decimal("100000.00"),
             fecha="2026-12-10",
-            concepto="Hostal",
-        )
-        Gasto.objects.create(
-            viaje=self.viaje,
-            categoria="Comida",
-            monto=Decimal("12500.00"),
-            fecha="2026-12-10",
-            concepto="Cena",
+            concepto="Registro antiguo",
         )
 
         self.assertEqual(self.viaje.presupuesto_gastado, Decimal("57500.00"))
+        self.assertEqual(dia.gastos_totales, Decimal("57500.00"))
+        self.assertEqual(dia.gastos_totales_formateados, "$57.500")
 
-    def test_detalle_registra_gasto_asociado_al_viaje(self):
+    def test_detalle_no_acepta_registro_de_gasto_por_separado(self):
         response = self.client.post(
             reverse("detalle_viaje", args=[self.viaje.pk]),
             {
@@ -59,78 +73,10 @@ class PresupuestoViajeTests(TestCase):
             },
         )
 
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(
-            response["Location"], reverse("detalle_viaje", args=[self.viaje.pk])
-        )
-        gasto = Gasto.objects.get(viaje=self.viaje)
-        self.assertEqual(gasto.monto, Decimal("15000.00"))
-        self.assertEqual(self.viaje.presupuesto_gastado, Decimal("15000.00"))
-        detalle = self.client.get(reverse("detalle_viaje", args=[self.viaje.pk]))
-        self.assertContains(detalle, "Control de gastos")
-        self.assertContains(detalle, "$15.000 CLP")
-
-    def test_gasto_se_asocia_a_un_dia_y_se_muestra_en_el_itinerario(self):
-        dia = Dia.objects.create(
-            viaje=self.viaje,
-            numero_dia=1,
-            fecha="2026-12-10",
-            titulo="Llegada",
-        )
-
-        response = self.client.post(
-            reverse("detalle_viaje", args=[self.viaje.pk]),
-            {
-                "form_gasto": "1",
-                "dia": str(dia.pk),
-                "categoria": "Alojamiento",
-                "monto": "45000",
-                "fecha": "2026-12-10",
-                "concepto": "Hostal",
-                "moneda": "CLP",
-            },
-        )
-
-        self.assertEqual(response.status_code, 302)
-        gasto = Gasto.objects.get(viaje=self.viaje)
-        self.assertEqual(gasto.dia, dia)
-
-        detalle = self.client.get(reverse("detalle_viaje", args=[self.viaje.pk]))
-        self.assertContains(detalle, "Gastos reales del día")
-        self.assertContains(detalle, "Hostal")
-        self.assertContains(detalle, "$45.000 CLP")
-
-    def test_gasto_no_puede_asociarse_a_un_dia_de_otro_viaje(self):
-        otro_viaje = Viaje.objects.create(
-            titulo="Otro viaje",
-            fecha_fin="2026-12-22",
-            pais="Chile",
-            ciudad="Natales",
-            presupuesto=Decimal("100000"),
-        )
-        dia_ajeno = Dia.objects.create(
-            viaje=otro_viaje,
-            numero_dia=1,
-            fecha="2026-12-21",
-            titulo="Día ajeno",
-        )
-
-        response = self.client.post(
-            reverse("detalle_viaje", args=[self.viaje.pk]),
-            {
-                "form_gasto": "1",
-                "dia": str(dia_ajeno.pk),
-                "categoria": "Comida",
-                "monto": "5000",
-                "fecha": "2026-12-10",
-                "concepto": "Almuerzo",
-                "moneda": "CLP",
-            },
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("dia", response.context["form_gasto"].errors)
+        self.assertEqual(response.status_code, 403)
         self.assertFalse(Gasto.objects.filter(viaje=self.viaje).exists())
+        detalle = self.client.get(reverse("detalle_viaje", args=[self.viaje.pk]))
+        self.assertNotContains(detalle, "Registrar gasto")
 
     def test_formulario_acepta_solo_pesos_enteros_y_moneda_clp(self):
         datos = {
@@ -234,7 +180,15 @@ class PresupuestoViajeTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(dia.actividades.get().nombre, "Caminata")
+        actividad = dia.actividades.get()
+        self.assertEqual(actividad.nombre, "Caminata")
+        self.assertEqual(self.viaje.presupuesto_gastado, Decimal("12500"))
+        detalle = self.client.get(reverse("detalle_viaje", args=[self.viaje.pk]))
+        self.assertContains(detalle, "Gastos del día · $12.500 CLP")
+        self.assertContains(detalle, "$12.500 CLP")
+        self.assertContains(detalle, "Gastos de actividades")
+        self.assertContains(detalle, "$487.500 CLP")
+        self.assertNotContains(detalle, "Registrar gasto")
 
     def test_crear_viaje_desde_el_listado_lo_guarda_y_lo_muestra(self):
         response = self.client.post(

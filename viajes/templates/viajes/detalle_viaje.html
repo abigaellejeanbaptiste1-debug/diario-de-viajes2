@@ -36,8 +36,28 @@
             }
         }
 
+        html {
+            scrollbar-width: thin;
+            scrollbar-color: #768dad #f0f4f9;
+        }
+
         ::-webkit-scrollbar {
-            display: none;
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f0f4f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #768dad;
+            border: 2px solid #f0f4f9;
+            border-radius: 9999px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #49607e;
         }
     </style>
     <script src="https://cdn.tailwindcss.com"></script>

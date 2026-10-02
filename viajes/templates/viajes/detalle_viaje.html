@@ -73,6 +73,11 @@
                         class="material-symbols-outlined">search</span></button><button aria-label="Notificaciones"
                     class="p-space-xs text-on-surface-variant hover:text-primary transition-colors" type="button"><span
                         class="material-symbols-outlined">notifications</span></button>
+                {% if user.is_authenticated %}
+                <form action="{% url 'logout' %}" method="post">{% csrf_token %}<button class="font-label-sm text-label-sm text-secondary" type="submit">Salir</button></form>
+                {% else %}
+                <a class="font-label-sm text-label-sm text-secondary" href="{% url 'login' %}">Ingresar</a>
+                {% endif %}
                 <div class="flex items-center gap-space-xs pl-space-xs"><img alt="Profile"
                         class="w-8 h-8 rounded-full object-cover ring-2 ring-secondary/20"
                         src="https://lh3.googleusercontent.com/aida/AEtjO1VnPEilozY1Iw8aFOwCGrDx9pgK0ieazkT9H1l0emx5AD48VmpPnDvL72zPaV-86cctBk6IbJMz6uzLMzY44lBvpzkdlab1eKqOvMWwOx9Xfr8_z1LN7CCHh5vxlu2V16-X40s5pp7uJOaIAq3YYWo6LMiMIoIyizXeDxO7gEWNXCdODgeHeZ87DaQSdmKnpNpzudKcfAEGDFxGmHoOgtUtjUo59oa_YGLDPxkz8oxbpJZaASBePVbf" />
@@ -109,7 +114,7 @@
                             <div class="text-left">
                                 <span
                                     class="font-label-sm text-label-sm text-on-surface-variant block uppercase">Destinos</span>
-                                <span class="font-headline-sm text-headline-sm text-primary">3 Explorados</span>
+                                <span class="font-headline-sm text-headline-sm text-primary">{{ cantidad_viajes }} Registrados</span>
                             </div>
                         </div>
                         <div
@@ -121,7 +126,7 @@
                             <div class="text-left">
                                 <span class="font-label-sm text-label-sm text-on-surface-variant block uppercase">Días
                                     en Ruta</span>
-                                <span class="font-headline-sm text-headline-sm text-primary">43 Días</span>
+                                <span class="font-headline-sm text-headline-sm text-primary">{{ dias_registrados }} Días</span>
                             </div>
                         </div>
                         <div
@@ -134,7 +139,7 @@
                                 <span
                                     class="font-label-sm text-label-sm text-on-surface-variant block uppercase">Presupuesto
                                     Global</span>
-                                <span class="font-headline-sm text-headline-sm text-primary">$8.100.000 CLP</span>
+                                <span class="font-headline-sm text-headline-sm text-primary">{{ presupuesto_global_formateado }} CLP</span>
                             </div>
                         </div>
                         <div
@@ -146,12 +151,13 @@
                             <div class="text-left">
                                 <span
                                     class="font-label-sm text-label-sm text-on-surface-variant block uppercase">Memorias</span>
-                                <span class="font-headline-sm text-headline-sm text-primary">128 Fotos</span>
+                                <span class="font-headline-sm text-headline-sm text-primary">{{ cantidad_fotos }} Fotos</span>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+                    {% if perms.viajes.add_viaje or editing %}
                     <section
                         class="lg:col-span-5 bg-surface-container-lowest rounded-xl shadow-md p-space-lg relative overflow-hidden">
                         <div
@@ -162,7 +168,7 @@
                                     <span class="material-symbols-outlined text-sm">edit_note</span>
                                 </span>
                                 <div>
-                                    <h2 class="font-headline-sm text-headline-sm text-primary">Registrar Nuevo Viaje
+                                    <h2 class="font-headline-sm text-headline-sm text-primary">{% if editing %}Editar Viaje{% else %}Registrar Nuevo Viaje{% endif %}
                                     </h2>
                                     <span class="font-body-sm text-body-sm text-on-surface-variant">Completa los campos
                                         para archivar la travesía</span>
@@ -170,12 +176,11 @@
                             </div>
                             <span
                                 class="inline-flex items-center px-space-sm py-space-xs rounded-full bg-secondary-fixed/50 text-on-secondary-fixed font-label-sm text-label-sm">
-                                Django Form: ViajeForm
+                                {% if editing %}Actualización de viaje{% else %}Django Form: ViajeForm{% endif %}
                             </span>
                         </div>
-                        <form action="{% url 'lista_viajes' %}" class="space-y-space-md" method="POST">
+                        <form action="{% if editing %}{% url 'editar_viaje' viaje_en_edicion.pk %}{% else %}{% url 'lista_viajes' %}{% endif %}" class="space-y-space-md" method="POST">
                             {% csrf_token %}
-                            <input type="hidden" name="publico" value="on" />
                             {% if form.errors %}
                             <div class="rounded-lg bg-error-container p-space-sm text-on-error-container" role="alert">
                                 {{ form.errors }}
@@ -185,7 +190,7 @@
                                 <label
                                     class="block font-label-md text-label-md text-primary mb-space-xs flex items-center justify-between"
                                     for="id_titulo">
-                                    <span>Destino o Título de Expedición</span>
+                                    <span>{% if editing %}Título del viaje{% else %}Destino o Título de Expedición{% endif %}</span>
                                     <span class="text-error font-body-sm">*</span>
                                 </label>
                                 <div class="relative">
@@ -193,7 +198,7 @@
                                         class="absolute left-space-md top-1/2 -translate-y-1/2 text-outline material-symbols-outlined text-base">pin_drop</span>
                                     <input
                                         class="w-full h-12 pl-10 pr-space-md bg-surface-container-low rounded-lg text-primary placeholder-outline font-body-md focus:outline-none focus:ring-2 focus:ring-secondary/40 shadow-inner"
-                                        id="id_titulo" name="titulo" placeholder="Ej: Noruega: Tromsø & Islas Lofoten"
+                                        id="id_titulo" name="titulo" value="{{ form.titulo.value|default_if_none:'' }}" placeholder="Ej: Noruega: Tromsø & Islas Lofoten"
                                         required="" type="text" />
                                 </div>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
@@ -201,13 +206,13 @@
                                         <label class="block font-label-md text-label-md text-primary mb-space-xs"
                                             for="id_pais">País</label>
                                         <input class="w-full h-12 px-space-md bg-surface-container-low rounded-lg text-primary"
-                                            id="id_pais" name="pais" placeholder="Ej. Chile" required type="text" />
+                                            id="id_pais" name="pais" value="{{ form.pais.value|default_if_none:'' }}" placeholder="Ej. Chile" required type="text" />
                                     </div>
                                     <div>
                                         <label class="block font-label-md text-label-md text-primary mb-space-xs"
                                             for="id_ciudad">Ciudad</label>
                                         <input class="w-full h-12 px-space-md bg-surface-container-low rounded-lg text-primary"
-                                            id="id_ciudad" name="ciudad" placeholder="Ej. Puerto Natales" required type="text" />
+                                            id="id_ciudad" name="ciudad" value="{{ form.ciudad.value|default_if_none:'' }}" placeholder="Ej. Puerto Natales" required type="text" />
                                     </div>
                                 </div>
                                 <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Nombre geográfico
@@ -224,7 +229,7 @@
                                     class="w-full p-space-md bg-surface-container-low rounded-lg text-primary placeholder-outline font-body-md focus:outline-none focus:ring-2 focus:ring-secondary/40 shadow-inner resize-none"
                                     id="id_descripcion" name="descripcion"
                                     placeholder="Describe los hitos, lugares icónicos, equipo necesario y expectativas generales del recorrido..."
-                                    required="" rows="4"></textarea>
+                                    required="" rows="4">{{ form.descripcion.value|default_if_none:'' }}</textarea>
                                 <div class="flex justify-between items-center mt-1">
                                     <span class="font-body-sm text-body-sm text-on-surface-variant">Se almacena en el
                                         campo de texto enriquecido.</span>
@@ -244,7 +249,7 @@
                                         <input
                                             class="w-full h-12 pl-10 pr-space-sm bg-surface-container-low rounded-lg text-primary font-body-md focus:outline-none focus:ring-2 focus:ring-secondary/40 shadow-inner"
                                             id="id_fecha_inicio" name="fecha_inicio" required="" type="date"
-                                            value="2026-06-10" />
+                                            value="{{ form.fecha_inicio.value|date:'Y-m-d'|default_if_none:'' }}" />
                                     </div>
                                 </div>
                                 <div>
@@ -258,7 +263,7 @@
                                         <input
                                             class="w-full h-12 pl-10 pr-space-sm bg-surface-container-low rounded-lg text-primary font-body-md focus:outline-none focus:ring-2 focus:ring-secondary/40 shadow-inner"
                                             id="id_fecha_fin" name="fecha_fin" required="" type="date"
-                                            value="2026-06-25" />
+                                            value="{{ form.fecha_fin.value|date:'Y-m-d'|default_if_none:'' }}" />
                                     </div>
                                 </div>
                             </div>
@@ -274,20 +279,29 @@
                                         class="absolute left-space-md top-1/2 -translate-y-1/2 font-headline-sm text-headline-sm text-secondary">$</span>
                                     <input
                                         class="w-full h-12 pl-10 pr-space-md bg-surface-container-low rounded-lg text-primary placeholder-outline font-headline-sm text-headline-sm focus:outline-none focus:ring-2 focus:ring-secondary/40 shadow-inner"
-                                        id="id_presupuesto" min="1" name="presupuesto" placeholder="2800000" required=""
+                                        id="id_presupuesto" min="1" name="presupuesto" value="{{ form.presupuesto.value|default_if_none:'' }}" placeholder="2800000" required=""
                                         step="1" type="number" />
                                 </div>
                                 <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Cálculo proyectado
                                     para vuelos, alojamientos y actividades.</p>
                             </div>
+                            <label class="flex items-center gap-space-sm font-label-md text-label-md text-on-surface">
+                                <input class="h-4 w-4 accent-secondary" type="checkbox" name="publico" value="on"
+                                    {% if form.publico.value %}checked{% endif %} />
+                                Hacer este viaje público
+                            </label>
                             <div class="pt-space-sm">
                                 <button
                                     class="w-full h-12 bg-primary-container text-on-primary hover:bg-secondary transition-all duration-200 rounded-lg font-label-lg text-label-lg flex items-center justify-center gap-space-xs shadow-md active:scale-95"
                                     type="submit">
                                     <span class="material-symbols-outlined">add_circle</span>
-                                    <span>Guardar Viaje</span>
+                                    <span>{% if editing %}Guardar cambios{% else %}Guardar Viaje{% endif %}</span>
                                 </button>
                             </div>
+                            {% if editing %}
+                            <a class="block text-center font-label-md text-label-md text-secondary hover:text-primary"
+                                href="{% url 'lista_viajes' %}">Cancelar edición</a>
+                            {% endif %}
                         </form>
                         <div
                             class="mt-space-lg p-space-md rounded-lg bg-surface-container flex items-center gap-space-sm">
@@ -298,7 +312,8 @@
                             </p>
                         </div>
                     </section>
-                    <section class="lg:col-span-7 flex flex-col gap-space-md">
+                    {% endif %}
+                    <section class="{% if perms.viajes.add_viaje or editing %}lg:col-span-7{% else %}lg:col-span-12{% endif %} flex flex-col gap-space-md">
                         <div
                             class="bg-surface-container-lowest rounded-xl shadow-md p-space-md flex items-center justify-between flex-wrap gap-space-sm">
                             <div class="flex items-center gap-space-sm">
@@ -322,6 +337,9 @@
                             </div>
                         </div>
                         <div class="space-y-space-md" id="trips-container">
+                            {% for message in messages %}
+                            <div class="rounded-lg bg-secondary-fixed/50 p-space-sm text-primary" role="status">{{ message }}</div>
+                            {% endfor %}
                             {% for viaje in viajes %}
                             <article class="bg-surface-container-lowest rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col md:flex-row">
                                 <div class="md:w-5/12 relative min-h-[180px] bg-primary flex items-center justify-center">
@@ -336,7 +354,7 @@
                                             <a class="font-headline-sm text-headline-sm text-primary hover:text-secondary transition-colors line-clamp-1"
                                                 href="{% url 'detalle_viaje' viaje.pk %}">{{ viaje.titulo }}</a>
                                             <span class="font-headline-sm text-headline-sm text-secondary whitespace-nowrap bg-secondary-fixed/30 px-space-xs py-0.5 rounded text-right">
-                                                ${{ viaje.presupuesto|floatformat:0 }} CLP
+                                                {{ viaje.presupuesto_formateado }} CLP
                                             </span>
                                         </div>
                                         <div class="flex items-center gap-space-xs text-on-surface-variant font-label-md text-label-md mb-space-sm">
@@ -347,15 +365,40 @@
                                     </div>
                                     <div class="flex items-center justify-between pt-space-xs bg-surface-container-low/40 -mx-space-md -mb-space-md p-space-md">
                                         <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">{{ viaje.ciudad }}, {{ viaje.pais }}</span>
-                                        <a class="font-label-lg text-label-lg text-secondary hover:text-primary transition-colors flex items-center gap-1"
-                                            href="{% url 'detalle_viaje' viaje.pk %}">
-                                            <span>Ver Detalle del Viaje</span>
-                                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
-                                        </a>
+                                        <div class="flex items-center gap-space-sm">
+                                            {% if perms.viajes.change_viaje %}<a class="font-label-md text-label-md text-secondary hover:text-primary"
+                                                href="{% url 'editar_viaje' viaje.pk %}">Editar</a>
+                                            {% endif %}
+                                            {% if perms.viajes.delete_viaje %}
+                                            <form action="{% url 'eliminar_viaje' viaje.pk %}" method="POST"
+                                                onsubmit="return confirm('¿Eliminar este viaje y sus días, actividades y gastos?');">
+                                                {% csrf_token %}
+                                                <button class="font-label-md text-label-md text-error hover:underline"
+                                                    type="submit">Eliminar</button>
+                                            </form>
+                                            {% endif %}
+                                            <a class="font-label-lg text-label-lg text-secondary hover:text-primary transition-colors flex items-center gap-1"
+                                                href="{% url 'detalle_viaje' viaje.pk %}">
+                                                <span>Ver Detalle</span>
+                                                <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
                             </article>
                             {% endfor %}
+                            {% if viajes.has_other_pages %}
+                            <nav class="flex items-center justify-between rounded-xl bg-surface-container-lowest p-space-md"
+                                aria-label="Paginación de viajes">
+                                {% if viajes.has_previous %}
+                                <a class="text-secondary hover:text-primary" href="?page={{ viajes.previous_page_number }}">← Anterior</a>
+                                {% else %}<span class="text-outline">← Anterior</span>{% endif %}
+                                <span class="font-label-md text-label-md">Página {{ viajes.number }} de {{ viajes.paginator.num_pages }}</span>
+                                {% if viajes.has_next %}
+                                <a class="text-secondary hover:text-primary" href="?page={{ viajes.next_page_number }}">Siguiente →</a>
+                                {% else %}<span class="text-outline">Siguiente →</span>{% endif %}
+                            </nav>
+                            {% endif %}
                             {% comment %}
                             <article
                                 class="bg-surface-container-lowest rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col md:flex-row">

@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.core.validators import MinValueValidator
 from django.db import models
 
 from .money import format_clp
@@ -12,7 +13,12 @@ class Viaje(models.Model):
     fecha_fin = models.DateField()
     pais = models.CharField(max_length=100)
     ciudad = models.CharField(max_length=100)
-    presupuesto = models.DecimalField(max_digits=12, decimal_places=0, default=0)
+    presupuesto = models.DecimalField(
+        max_digits=12,
+        decimal_places=0,
+        default=0,
+        validators=[MinValueValidator(0)],
+    )
     publico = models.BooleanField(default=True)
 
     def __str__(self):
@@ -22,6 +28,10 @@ class Viaje(models.Model):
     def presupuesto_gastado(self):
         total = self.gastos.aggregate(models.Sum("monto"))["monto__sum"]
         return total if total is not None else Decimal("0.00")
+
+    @property
+    def presupuesto_formateado(self):
+        return format_clp(self.presupuesto)
 
 
 class Dia(models.Model):
@@ -44,17 +54,30 @@ class Actividad(models.Model):
     hora = models.TimeField()
     ubicacion = models.CharField(max_length=200, blank=True, null=True)
     categoria = models.CharField(max_length=100, blank=True, null=True)
-    costo = models.DecimalField(max_digits=12, decimal_places=0, default=0)
+    costo = models.DecimalField(
+        max_digits=12,
+        decimal_places=0,
+        default=0,
+        validators=[MinValueValidator(0)],
+    )
     rating = models.IntegerField(blank=True, null=True)
 
     def __str__(self):
         return self.nombre
 
+    @property
+    def costo_formateado(self):
+        return format_clp(self.costo)
+
 
 class Gasto(models.Model):
     viaje = models.ForeignKey(Viaje, on_delete=models.CASCADE, related_name="gastos")
     categoria = models.CharField(max_length=100)
-    monto = models.DecimalField(max_digits=12, decimal_places=0)
+    monto = models.DecimalField(
+        max_digits=12,
+        decimal_places=0,
+        validators=[MinValueValidator(0)],
+    )
     fecha = models.DateField()
     concepto = models.CharField(max_length=200)
     moneda = models.CharField(
@@ -65,6 +88,10 @@ class Gasto(models.Model):
 
     def __str__(self):
         return f"{self.concepto} - {format_clp(self.monto)} CLP"
+
+    @property
+    def monto_formateado(self):
+        return format_clp(self.monto)
 
 
 class Companion(models.Model):

@@ -72,6 +72,11 @@
                         class="material-symbols-outlined">search</span></button><button aria-label="Notificaciones"
                     class="p-space-xs text-on-surface-variant hover:text-primary transition-colors" type="button"><span
                         class="material-symbols-outlined">notifications</span></button>
+                {% if user.is_authenticated %}
+                <form action="{% url 'logout' %}" method="post">{% csrf_token %}<button class="font-label-sm text-label-sm text-secondary" type="submit">Salir</button></form>
+                {% else %}
+                <a class="font-label-sm text-label-sm text-secondary" href="{% url 'login' %}">Ingresar</a>
+                {% endif %}
                 <div class="flex items-center gap-space-xs pl-space-xs"><img alt="Profile"
                         class="w-8 h-8 rounded-full object-cover ring-2 ring-secondary/20"
                         src="https://lh3.googleusercontent.com/aida/AEtjO1VnPEilozY1Iw8aFOwCGrDx9pgK0ieazkT9H1l0emx5AD48VmpPnDvL72zPaV-86cctBk6IbJMz6uzLMzY44lBvpzkdlab1eKqOvMWwOx9Xfr8_z1LN7CCHh5vxlu2V16-X40s5pp7uJOaIAq3YYWo6LMiMIoIyizXeDxO7gEWNXCdODgeHeZ87DaQSdmKnpNpzudKcfAEGDFxGmHoOgtUtjUo59oa_YGLDPxkz8oxbpJZaASBePVbf" />
@@ -148,8 +153,65 @@
                     </div>
                 </div>
             </section>
+            {% for message in messages %}
+            <div class="mx-margin md:mx-margin-tablet lg:mx-margin-desktop mb-space-md rounded-lg bg-secondary-fixed/50 p-space-sm text-primary"
+                role="status">{{ message }}</div>
+            {% endfor %}
+            <section class="w-full px-margin md:px-margin-tablet lg:px-margin-desktop pb-space-lg">
+                <div class="rounded-xl bg-surface-container-lowest p-space-lg shadow-sm">
+                    <div class="mb-space-md flex flex-wrap items-center justify-between gap-space-sm">
+                        <div>
+                            <h2 class="font-headline-md text-headline-md text-primary">Control de gastos</h2>
+                            <p class="font-body-sm text-body-sm text-on-surface-variant">
+                                Gastado: {{ presupuesto_gastado_formateado }} CLP · Disponible: {{ presupuesto_disponible_formateado }} CLP
+                            </p>
+                        </div>
+                    </div>
+                    {% if perms.viajes.add_gasto %}
+                    <form action="{% url 'detalle_viaje' viaje.pk %}" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-space-sm" method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_gasto" value="1" />
+                        {% if form_gasto.errors %}
+                        <div class="lg:col-span-5 rounded-lg bg-error-container p-space-sm text-on-error-container" role="alert">{{ form_gasto.errors }}</div>
+                        {% endif %}
+                        <label class="font-label-sm text-label-sm text-on-surface">Concepto
+                            <input class="mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-low" name="concepto" required maxlength="200" />
+                        </label>
+                        <label class="font-label-sm text-label-sm text-on-surface">Categoría
+                            <input class="mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-low" name="categoria" required maxlength="100" />
+                        </label>
+                        <label class="font-label-sm text-label-sm text-on-surface">Monto (CLP)
+                            <input class="mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-low" name="monto" type="number" min="0" step="1" required />
+                        </label>
+                        <label class="font-label-sm text-label-sm text-on-surface">Fecha
+                            <input class="mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-low" name="fecha" type="date" required />
+                        </label>
+                        <input type="hidden" name="moneda" value="CLP" />
+                        <div class="flex items-end">
+                            <button class="w-full rounded-lg bg-secondary px-space-md py-2 font-label-md text-label-md text-on-primary" type="submit">Registrar gasto</button>
+                        </div>
+                    </form>
+                    {% endif %}
+                    {% if gastos %}
+                    <div class="mt-space-md divide-y divide-surface-container">
+                        {% for gasto in gastos %}
+                        <div class="flex flex-wrap items-center justify-between gap-space-sm py-space-sm">
+                            <div>
+                                <span class="font-label-md text-label-md text-primary">{{ gasto.concepto }}</span>
+                                <span class="ml-2 font-body-sm text-body-sm text-on-surface-variant">{{ gasto.categoria }} · {{ gasto.fecha|date:"d M Y" }}</span>
+                            </div>
+                            <span class="font-label-md text-label-md text-primary">{{ gasto.monto_formateado }} CLP</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="mt-space-md font-body-sm text-body-sm text-on-surface-variant">Aún no hay gastos registrados.</p>
+                    {% endif %}
+                </div>
+            </section>
             <div class="w-full px-margin md:px-margin-tablet lg:px-margin-desktop pb-space-xl">
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg lg:gap-gutter-desktop items-start">
+                    {% if perms.viajes.add_dia %}
                     <aside class="w-full lg:col-span-4 lg:sticky lg:top-24">
                         <div class="rounded-xl overflow-hidden bg-surface-container-lowest shadow-md">
                             <div
@@ -165,6 +227,7 @@
                                 method="POST">
                                 {% csrf_token %}
                                 <input type="hidden" name="form_dia" value="1" />
+                                {% if form_dia.errors %}<div class="rounded-lg bg-error-container p-space-sm text-on-error-container" role="alert">{{ form_dia.errors }}</div>{% endif %}
                                 <div>
                                     <label class="block font-label-md text-label-md text-on-surface mb-1.5"
                                         for="id_numero_dia">
@@ -250,7 +313,8 @@
                                 class="font-label-sm text-label-sm px-2.5 py-1 rounded bg-surface-container text-primary">Sincronizado</span>
                         </div>
                     </aside>
-                    <main class="w-full lg:col-span-8 flex flex-col gap-space-lg">
+                    {% endif %}
+                    <main class="{% if perms.viajes.add_dia %}w-full lg:col-span-8{% else %}w-full lg:col-span-12{% endif %} flex flex-col gap-space-lg">
                         <div
                             class="flex items-center justify-between flex-wrap gap-space-sm bg-surface-container-lowest p-space-md rounded-xl shadow-sm">
                             <div>
@@ -292,11 +356,45 @@
                                         {% if actividad.ubicacion %}<p class="font-body-sm text-body-sm text-on-surface-variant">{{ actividad.ubicacion }}</p>{% endif %}
                                         {% if actividad.descripcion %}<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">{{ actividad.descripcion }}</p>{% endif %}
                                     </div>
-                                    <span class="font-label-md text-label-md text-primary">${{ actividad.costo|floatformat:0 }} CLP</span>
+                                    <span class="font-label-md text-label-md text-primary">{{ actividad.costo_formateado }} CLP</span>
                                 </div>
                                 {% empty %}
                                 <p class="font-body-sm text-body-sm text-on-surface-variant">Todavía no hay actividades para este día.</p>
                                 {% endfor %}
+                                {% if perms.viajes.add_actividad %}
+                                <details class="rounded-lg bg-surface-container-low p-space-md">
+                                    <summary class="cursor-pointer font-label-md text-label-md text-secondary">Agregar actividad</summary>
+                                    <form action="{% url 'detalle_viaje' viaje.pk %}" class="mt-space-sm grid grid-cols-1 md:grid-cols-2 gap-space-md" method="POST">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="form_actividad" value="1" />
+                                        <input type="hidden" name="dia_id" value="{{ dia.pk }}" />
+                                        {% if dia_id_formulario == dia.pk and form_actividad.errors %}
+                                        <div class="md:col-span-2 rounded-lg bg-error-container p-space-sm text-on-error-container" role="alert">{{ form_actividad.errors }}</div>
+                                        {% endif %}
+                                        <label class="font-label-sm text-label-sm text-on-surface">Nombre
+                                            <input class="mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-lowest" name="nombre" required maxlength="200" />
+                                        </label>
+                                        <label class="font-label-sm text-label-sm text-on-surface">Hora
+                                            <input class="mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-lowest" name="hora" type="time" required />
+                                        </label>
+                                        <label class="font-label-sm text-label-sm text-on-surface">Ubicación
+                                            <input class="mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-lowest" name="ubicacion" maxlength="200" />
+                                        </label>
+                                        <label class="font-label-sm text-label-sm text-on-surface">Categoría
+                                            <input class="mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-lowest" name="categoria" maxlength="100" />
+                                        </label>
+                                        <label class="font-label-sm text-label-sm text-on-surface">Costo (CLP)
+                                            <input class="mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-lowest" name="costo" type="number" min="0" step="1" value="0" />
+                                        </label>
+                                        <label class="font-label-sm text-label-sm text-on-surface">Descripción
+                                            <textarea class="mt-1 w-full px-3 py-2 rounded-lg bg-surface-container-lowest" name="descripcion" rows="2"></textarea>
+                                        </label>
+                                        <div class="md:col-span-2 flex justify-end">
+                                            <button class="px-space-md py-2 rounded-lg bg-secondary text-on-primary font-label-md text-label-md" type="submit">Guardar actividad</button>
+                                        </div>
+                                    </form>
+                                </details>
+                                {% endif %}
                             </article>
                             {% empty %}
                             <p class="ml-6 md:ml-8 p-space-md bg-surface-container-lowest rounded-xl text-on-surface-variant">Todavía no hay días en este itinerario. Usa el formulario para agregar el primero.</p>

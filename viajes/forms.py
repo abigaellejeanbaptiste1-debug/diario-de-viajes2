@@ -1,4 +1,5 @@
 from django import forms
+from django.core.exceptions import ValidationError
 
 from .models import Actividad, Companion, Dia, Gasto, Photo, Viaje
 
@@ -35,6 +36,18 @@ class ViajeForm(forms.ModelForm):
             ),
         }
 
+    def clean(self):
+        cleaned_data = super().clean()
+        fecha_inicio = cleaned_data.get("fecha_inicio")
+        fecha_fin = cleaned_data.get("fecha_fin")
+        presupuesto = cleaned_data.get("presupuesto")
+
+        if fecha_inicio and fecha_fin and fecha_fin < fecha_inicio:
+            self.add_error("fecha_fin", "La fecha de término debe ser posterior al inicio.")
+        if presupuesto is not None and presupuesto < 0:
+            self.add_error("presupuesto", "El presupuesto no puede ser negativo.")
+        return cleaned_data
+
 
 class GastoForm(forms.ModelForm):
     class Meta:
@@ -57,6 +70,12 @@ class GastoForm(forms.ModelForm):
             ),
             "moneda": forms.Select(attrs={"class": "form-control"}),
         }
+
+    def clean_monto(self):
+        monto = self.cleaned_data["monto"]
+        if monto < 0:
+            raise ValidationError("El monto no puede ser negativo.")
+        return monto
 
 
 class DiaForm(forms.ModelForm):
@@ -94,6 +113,12 @@ class ActividadForm(forms.ModelForm):
                 attrs={"placeholder": "Costo en pesos chilenos", "step": "1"}
             ),
         }
+
+    def clean_costo(self):
+        costo = self.cleaned_data["costo"]
+        if costo < 0:
+            raise ValidationError("El costo no puede ser negativo.")
+        return costo
 
 
 class CompanionForm(forms.ModelForm):

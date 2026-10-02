@@ -2,8 +2,12 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    path('cuenta/ingresar/', views.ViajesLoginView.as_view(), name='login'),
+    path('cuenta/salir/', views.cerrar_sesion, name='logout'),
     path('', views.lista_viajes, name='lista_viajes'),
     path('viaje/<int:viaje_id>/', views.detalle_viaje, name='detalle_viaje'),
+    path('viaje/<int:viaje_id>/editar/', views.editar_viaje, name='editar_viaje'),
+    path('viaje/<int:viaje_id>/eliminar/', views.eliminar_viaje, name='eliminar_viaje'),
 
     # Ruta para agregar un acompañante a un viaje específico
     path(

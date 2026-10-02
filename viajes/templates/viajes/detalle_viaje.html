@@ -1,92 +1,584 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ viaje.destino }} - Diario de Viajes</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
-    <div class="container py-5">
-        
-        <a href="{% url 'lista_viajes' %}" class="btn btn-secondary mb-3">← Volver al listado</a>
-        
-        <!-- En-tête du voyage -->
-        <div class="card shadow-sm mb-4">
-            <div class="card-body">
-                <h1>✈️ Viaje a {{ viaje.destino }}</h1>
-                <p class="text-muted">{{ viaje.descripcion }}</p>
-                <p class="mb-0"><strong>Fechas:</strong> {{ viaje.fecha_inicio }} al {{ viaje.fecha_fin }} | <strong>Presupuesto:</strong> ${{ viaje.presupuesto }}</p>
-            </div>
-        </div>
 
-        <div class="row">
-            
-            <div class="col-md-4 mb-4">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="card-title mb-0">Agregar Día</h5>
-                    </div>
-                    <div class="card-body">
-                        <form method="post" enctype="multipart/form-data">
-                            {% csrf_token %}
-                            {{ form_dia.as_p }}
-                            <button type="submit" name="form_dia" class="btn btn-success w-100">Guardar Día</button>
-                        </form>
-                    </div>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <meta content="web_standard" name="shell-type" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Plus+Jakarta+Sans:wght@100..900&display=swap"
+        rel="stylesheet" />
+    <style>
+        @layer base {
+
+            html,
+            body {
+                margin: 0;
+                padding: 0;
+            }
+
+            body {
+                overscroll-behavior: none;
+            }
+
+            main>:first-child {
+                margin-top: 0 !important;
+            }
+
+            main>:last-child {
+                margin-bottom: 0 !important;
+            }
+        }
+
+        ::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script
+        id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "on-tertiary-fixed": "#001e2c", "on-secondary-container": "#fefcff", "inverse-on-surface": "#edf1f6", "secondary-fixed": "#dbe1ff", "tertiary": "#00101a", "on-tertiary-fixed-variant": "#004c69", "secondary-fixed-dim": "#b4c5ff", "surface-container-lowest": "#ffffff", "surface-container": "#eaeef3", "primary-container": "#0a2540", "on-primary-container": "#768dad", "on-tertiary": "#ffffff", "on-background": "#171c20", "surface-container-highest": "#dfe3e8", "surface": "#f6faff", "surface-container-low": "#f0f4f9", "inverse-primary": "#b0c8eb", "on-secondary": "#ffffff", "surface-bright": "#f6faff", "outline": "#74777e", "tertiary-container": "#002738", "on-surface-variant": "#43474d", "surface-tint": "#49607e", "on-secondary-fixed-variant": "#003ea8", "error": "#ba1a1a", "primary-fixed-dim": "#b0c8eb", "secondary": "#0051d5", "secondary-container": "#316bf3", "surface-variant": "#dfe3e8", "outline-variant": "#c4c6ce", "surface-container-high": "#e4e9ed", "on-error": "#ffffff", "surface-dim": "#d6dadf", "on-secondary-fixed": "#00174b", "on-primary": "#ffffff", "on-primary-fixed": "#001c37", "primary-fixed": "#d2e4ff", "on-primary-fixed-variant": "#314865", "on-surface": "#171c20", "tertiary-fixed-dim": "#7bd0ff", "background": "#f6faff", "on-tertiary-container": "#0095c9", "error-container": "#ffdad6", "inverse-surface": "#2c3135", "tertiary-fixed": "#c4e7ff", "primary": "#000f22", "on-error-container": "#93000a" }, borderRadius: { DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px" }, spacing: { margin: "1.25rem", "space-sm": "0.5rem", "space-xl": "2.5rem", "space-xs": "0.25rem", "space-md": "1rem", "space-lg": "1.5rem", "margin-tablet": "2rem", gutter: "1rem", "gutter-desktop": "2rem", "margin-desktop": "3rem", "gutter-tablet": "1.5rem" }, fontFamily: { "headline-md": ["Plus Jakarta Sans"], "label-sm": ["Plus Jakarta Sans"], "body-lg": ["Inter"], "display-lg-mobile": ["Plus Jakarta Sans"], "label-lg": ["Plus Jakarta Sans"], "headline-lg-mobile": ["Plus Jakarta Sans"], "body-sm": ["Inter"], "body-md": ["Inter"], "headline-sm": ["Plus Jakarta Sans"], "display-lg": ["Plus Jakarta Sans"], "label-md": ["Plus Jakarta Sans"], "headline-lg": ["Plus Jakarta Sans"] }, fontSize: { "headline-md": ["1.25rem", { lineHeight: "1.75rem", letterSpacing: "-0.01em", fontWeight: "600" }], "label-sm": ["0.6875rem", { lineHeight: "0.875rem", letterSpacing: "0.04em", fontWeight: "700" }], "body-lg": ["1rem", { lineHeight: "1.6rem", fontWeight: "400" }], "display-lg-mobile": ["2.25rem", { lineHeight: "2.75rem", letterSpacing: "-0.025em", fontWeight: "800" }], "label-lg": ["0.875rem", { lineHeight: "1.25rem", letterSpacing: "0.01em", fontWeight: "600" }], "headline-lg-mobile": ["1.5rem", { lineHeight: "2rem", letterSpacing: "-0.015em", fontWeight: "700" }], "body-sm": ["0.75rem", { lineHeight: "1.25rem", fontWeight: "400" }], "body-md": ["0.875rem", { lineHeight: "1.45rem", fontWeight: "400" }], "headline-sm": ["1.125rem", { lineHeight: "1.5rem", fontWeight: "600" }], "display-lg": ["3rem", { lineHeight: "3.5rem", letterSpacing: "-0.03em", fontWeight: "800" }], "label-md": ["0.75rem", { lineHeight: "1rem", letterSpacing: "0.02em", fontWeight: "600" }], "headline-lg": ["2rem", { lineHeight: "2.5rem", letterSpacing: "-0.02em", fontWeight: "700" }] } } } };</script>
+</head>
+
+<body class="bg-background font-body-md text-on-surface antialiased">
+    <header
+        class="fixed top-0 left-0 right-0 z-50 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(10,37,64,0.04)]">
+        <div class="h-16 w-full px-margin md:px-margin-tablet lg:px-margin-desktop flex items-center justify-between">
+            <div class="flex items-center gap-space-md"><img alt="Brand logo. - Primary color: #0a2540
+- Font: plusJakartaSans
+- Mode: light
+- Roundness: rounded-md
+" class="h-8 w-auto object-contain"
+                    src="https://lh3.googleusercontent.com/aida/AEtjO1WeZHjAb9cNlibm--puhPsAgXm6qiDSZtya18unmPX7e_7QR_gncyeTJV5OtZGAJwEijxVECECXXDf9_3K5m3nwwGwifrC_fftN5MB0WqvfJFgDCJG6njSzZVzVG5x_WNHSF9A1MesYWK5DXseDdT6aG7S6Alj9xBEvnlRkJsAeGS0UyhVUDp3sc8yzXHcOZH70VwJfgggxSgAqCvAsqrkOdZ5zJWyiShqCP4_jWIjDPGwzLHZ3SQn3" /><span
+                    class="font-headline-sm text-headline-sm text-primary-container tracking-tight">Diario de
+                    Viajes</span></div>
+            <nav class="hidden md:flex items-center gap-space-xs"
+                data-active-classes="bg-primary-container text-on-primary font-label-lg text-label-lg rounded-lg"><a
+                    aria-current="page"
+                    class="px-space-md py-space-sm transition-colors bg-primary-container text-on-primary font-label-lg text-label-lg rounded-lg"
+                    data-path="mis-viajes" href="lista_viajes.html">Mis Viajes</a><a
+                    class="px-space-md py-space-sm font-label-lg text-label-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors rounded-lg"
+                    data-path="detalle-del-itinerario" href="detalle_viaje.html">Detalle del Itinerario</a><a
+                    class="px-space-md py-space-sm font-label-lg text-label-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors rounded-lg"
+                    data-path="gastos" href="#">Gastos</a><a
+                    class="px-space-md py-space-sm font-label-lg text-label-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors rounded-lg"
+                    data-path="explorar" href="#">Explorar</a></nav>
+            <div class="flex items-center gap-space-md"><button aria-label="Buscar viajes"
+                    class="p-space-xs text-on-surface-variant hover:text-primary transition-colors" type="button"><span
+                        class="material-symbols-outlined">search</span></button><button aria-label="Notificaciones"
+                    class="p-space-xs text-on-surface-variant hover:text-primary transition-colors" type="button"><span
+                        class="material-symbols-outlined">notifications</span></button>
+                <div class="flex items-center gap-space-xs pl-space-xs"><img alt="Profile"
+                        class="w-8 h-8 rounded-full object-cover ring-2 ring-secondary/20"
+                        src="https://lh3.googleusercontent.com/aida/AEtjO1VnPEilozY1Iw8aFOwCGrDx9pgK0ieazkT9H1l0emx5AD48VmpPnDvL72zPaV-86cctBk6IbJMz6uzLMzY44lBvpzkdlab1eKqOvMWwOx9Xfr8_z1LN7CCHh5vxlu2V16-X40s5pp7uJOaIAq3YYWo6LMiMIoIyizXeDxO7gEWNXCdODgeHeZ87DaQSdmKnpNpzudKcfAEGDFxGmHoOgtUtjUo59oa_YGLDPxkz8oxbpJZaASBePVbf" />
                 </div>
             </div>
-
-            
-            <div class="col-md-8">
-                <h2>Itinerario de Viaje</h2>
-                {% if dias %}
-                    {% for dia in dias %}
-                        <div class="card shadow-sm mb-3">
-                            <div class="card-body">
-                                <h4>Día {{ dia.numero_dia }}: {{ dia.titulo }}</h4>
-                                <small class="text-muted">📅 {{ dia.fecha }}</small>
-                                <p class="mt-2">{{ dia.descripcion }}</p>
-                                
-                                <h5 class="mt-3">Actividades:</h5>
-                                <ul class="list-group mb-3">
-                                    {% for actividad in dia.actividades.all %}
-                                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <strong>{{ actividad.hora }}</strong> - {{ actividad.nombre }} (📍 {{ actividad.ubicacion }})
-                                                <br><small class="text-muted">{{ actividad.descripcion }}</small>
-                                            </div>
-                                            <span class="badge bg-secondary">${{ actividad.costo }}</span>
-                                        </li>
-                                    {% empty %}
-                                        <li class="list-group-item text-muted">No hay actividades registradas para este día.</li>
-                                    {% endfor %}
-                                </ul>
-
-                                <!-- Bouton pour ajouter une activité à ce jour précis -->
-                                <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#collapseActividad{{ dia.id }}">
-                                    + Agregar Actividad
-                                </button>
-                                
-                                <div class="collapse mt-3" id="collapseActividad{{ dia.id }}">
-                                    <div class="card card-body bg-light">
-                                        <form method="post">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="dia_id" value="{{ dia.id }}">
-                                            {{ form_actividad.as_p }}
-                                            <button type="submit" name="form_actividad" class="btn btn-primary btn-sm">Guardar Actividad</button>
-                                        </form>
+        </div>
+    </header>
+    <main class="w-full pt-16 bg-surface min-h-screen">
+        <div class="flex flex-col w-full">
+            <div class="w-full px-margin md:px-margin-tablet lg:px-margin-desktop py-space-xl">
+                <div class="relative mb-space-xl flex flex-col items-center text-center">
+                    <div
+                        class="inline-flex items-center gap-space-xs px-space-md py-space-xs rounded-full bg-secondary/10 text-secondary mb-space-sm">
+                        <span class="material-symbols-outlined text-sm"
+                            style="font-variation-settings: 'FILL' 1;">flight_takeoff</span>
+                        <span class="font-label-sm text-label-sm uppercase tracking-wider">Bitácora Personal de
+                            Expediciones</span>
+                    </div>
+                    <h1
+                        class="font-display-lg text-display-lg-mobile md:text-display-lg text-primary tracking-tight mb-space-xs">
+                        ✈️ Diario de Viajes
+                    </h1>
+                    <p class="font-body-lg text-body-lg text-on-surface-variant max-w-xl">
+                        Registra nuevas aventuras y explora tus bitácoras de viaje con un registro detallado de
+                        itinerarios y presupuestos.
+                    </p>
+                    <div class="w-full max-w-5xl mt-space-lg grid grid-cols-2 md:grid-cols-4 gap-space-sm">
+                        <div
+                            class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex items-center gap-space-sm">
+                            <div
+                                class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-secondary">
+                                <span class="material-symbols-outlined">explore</span>
+                            </div>
+                            <div class="text-left">
+                                <span
+                                    class="font-label-sm text-label-sm text-on-surface-variant block uppercase">Destinos</span>
+                                <span class="font-headline-sm text-headline-sm text-primary">3 Explorados</span>
+                            </div>
+                        </div>
+                        <div
+                            class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex items-center gap-space-sm">
+                            <div
+                                class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-secondary">
+                                <span class="material-symbols-outlined">calendar_month</span>
+                            </div>
+                            <div class="text-left">
+                                <span class="font-label-sm text-label-sm text-on-surface-variant block uppercase">Días
+                                    en Ruta</span>
+                                <span class="font-headline-sm text-headline-sm text-primary">43 Días</span>
+                            </div>
+                        </div>
+                        <div
+                            class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex items-center gap-space-sm">
+                            <div
+                                class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-secondary">
+                                <span class="material-symbols-outlined">account_balance_wallet</span>
+                            </div>
+                            <div class="text-left">
+                                <span
+                                    class="font-label-sm text-label-sm text-on-surface-variant block uppercase">Presupuesto
+                                    Global</span>
+                                <span class="font-headline-sm text-headline-sm text-primary">$8,100</span>
+                            </div>
+                        </div>
+                        <div
+                            class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex items-center gap-space-sm">
+                            <div
+                                class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-secondary">
+                                <span class="material-symbols-outlined">photo_library</span>
+                            </div>
+                            <div class="text-left">
+                                <span
+                                    class="font-label-sm text-label-sm text-on-surface-variant block uppercase">Memorias</span>
+                                <span class="font-headline-sm text-headline-sm text-primary">128 Fotos</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+                    <section
+                        class="lg:col-span-5 bg-surface-container-lowest rounded-xl shadow-md p-space-lg relative overflow-hidden">
+                        <div
+                            class="flex items-center justify-between pb-space-md mb-space-md bg-surface-container-low/50 -mx-space-lg -mt-space-lg px-space-lg pt-space-lg">
+                            <div class="flex items-center gap-space-sm">
+                                <span
+                                    class="w-8 h-8 rounded-lg bg-primary-container text-on-primary flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-sm">edit_note</span>
+                                </span>
+                                <div>
+                                    <h2 class="font-headline-sm text-headline-sm text-primary">Registrar Nuevo Viaje
+                                    </h2>
+                                    <span class="font-body-sm text-body-sm text-on-surface-variant">Completa los campos
+                                        para archivar la travesía</span>
+                                </div>
+                            </div>
+                            <span
+                                class="inline-flex items-center px-space-sm py-space-xs rounded-full bg-secondary-fixed/50 text-on-secondary-fixed font-label-sm text-label-sm">
+                                Django Form: ViajeForm
+                            </span>
+                        </div>
+                        <form action="#" class="space-y-space-md" method="POST"
+                            onsubmit="event.preventDefault(); addNewTrip();">
+                            <div>
+                                <label
+                                    class="block font-label-md text-label-md text-primary mb-space-xs flex items-center justify-between"
+                                    for="id_destino">
+                                    <span>Destino o Título de Expedición</span>
+                                    <span class="text-error font-body-sm">*</span>
+                                </label>
+                                <div class="relative">
+                                    <span
+                                        class="absolute left-space-md top-1/2 -translate-y-1/2 text-outline material-symbols-outlined text-base">pin_drop</span>
+                                    <input
+                                        class="w-full h-12 pl-10 pr-space-md bg-surface-container-low rounded-lg text-primary placeholder-outline font-body-md focus:outline-none focus:ring-2 focus:ring-secondary/40 shadow-inner"
+                                        id="id_destino" name="destino" placeholder="Ej: Noruega: Tromsø & Islas Lofoten"
+                                        required="" type="text" />
+                                </div>
+                                <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Nombre geográfico
+                                    descriptivo del destino principal o circuito.</p>
+                            </div>
+                            <div>
+                                <label
+                                    class="block font-label-md text-label-md text-primary mb-space-xs flex items-center justify-between"
+                                    for="id_descripcion">
+                                    <span>Descripción y Notas del Viaje</span>
+                                    <span class="text-error font-body-sm">*</span>
+                                </label>
+                                <textarea
+                                    class="w-full p-space-md bg-surface-container-low rounded-lg text-primary placeholder-outline font-body-md focus:outline-none focus:ring-2 focus:ring-secondary/40 shadow-inner resize-none"
+                                    id="id_descripcion" name="descripcion"
+                                    placeholder="Describe los hitos, lugares icónicos, equipo necesario y expectativas generales del recorrido..."
+                                    required="" rows="4"></textarea>
+                                <div class="flex justify-between items-center mt-1">
+                                    <span class="font-body-sm text-body-sm text-on-surface-variant">Se almacena en el
+                                        campo de texto enriquecido.</span>
+                                    <span class="font-label-sm text-label-sm text-outline"
+                                        id="char-counter">0/500</span>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
+                                <div>
+                                    <label class="block font-label-md text-label-md text-primary mb-space-xs"
+                                        for="id_fecha_inicio">
+                                        Fecha de Inicio
+                                    </label>
+                                    <div class="relative">
+                                        <span
+                                            class="absolute left-space-md top-1/2 -translate-y-1/2 text-outline material-symbols-outlined text-base">event</span>
+                                        <input
+                                            class="w-full h-12 pl-10 pr-space-sm bg-surface-container-low rounded-lg text-primary font-body-md focus:outline-none focus:ring-2 focus:ring-secondary/40 shadow-inner"
+                                            id="id_fecha_inicio" name="fecha_inicio" required="" type="date"
+                                            value="2025-06-10" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block font-label-md text-label-md text-primary mb-space-xs"
+                                        for="id_fecha_fin">
+                                        Fecha de Fin
+                                    </label>
+                                    <div class="relative">
+                                        <span
+                                            class="absolute left-space-md top-1/2 -translate-y-1/2 text-outline material-symbols-outlined text-base">event_available</span>
+                                        <input
+                                            class="w-full h-12 pl-10 pr-space-sm bg-surface-container-low rounded-lg text-primary font-body-md focus:outline-none focus:ring-2 focus:ring-secondary/40 shadow-inner"
+                                            id="id_fecha_fin" name="fecha_fin" required="" type="date"
+                                            value="2025-06-25" />
                                     </div>
                                 </div>
                             </div>
+                            <div>
+                                <label
+                                    class="block font-label-md text-label-md text-primary mb-space-xs flex items-center justify-between"
+                                    for="id_presupuesto">
+                                    <span>Presupuesto Estimado (USD)</span>
+                                    <span class="text-error font-body-sm">*</span>
+                                </label>
+                                <div class="relative">
+                                    <span
+                                        class="absolute left-space-md top-1/2 -translate-y-1/2 font-headline-sm text-headline-sm text-secondary">$</span>
+                                    <input
+                                        class="w-full h-12 pl-10 pr-space-md bg-surface-container-low rounded-lg text-primary placeholder-outline font-headline-sm text-headline-sm focus:outline-none focus:ring-2 focus:ring-secondary/40 shadow-inner"
+                                        id="id_presupuesto" min="1" name="presupuesto" placeholder="2800" required=""
+                                        step="50" type="number" />
+                                </div>
+                                <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Cálculo proyectado
+                                    para vuelos, alojamientos y actividades.</p>
+                            </div>
+                            <div class="pt-space-sm">
+                                <button
+                                    class="w-full h-12 bg-primary-container text-on-primary hover:bg-secondary transition-all duration-200 rounded-lg font-label-lg text-label-lg flex items-center justify-center gap-space-xs shadow-md active:scale-95"
+                                    type="submit">
+                                    <span class="material-symbols-outlined">add_circle</span>
+                                    <span>Guardar Viaje</span>
+                                </button>
+                            </div>
+                        </form>
+                        <div
+                            class="mt-space-lg p-space-md rounded-lg bg-surface-container flex items-center gap-space-sm">
+                            <span class="material-symbols-outlined text-secondary">info</span>
+                            <p class="font-body-sm text-body-sm text-on-surface-variant">
+                                Las fechas y montos ingresados generan automáticamente los indicadores y etapas en la
+                                vista de detalle.
+                            </p>
                         </div>
-                    {% endfor %}
-                {% else %}
-                    <p class="text-muted">No hay días registrados para este viaje todavía.</p>
-                {% endif %}
+                    </section>
+                    <section class="lg:col-span-7 flex flex-col gap-space-md">
+                        <div
+                            class="bg-surface-container-lowest rounded-xl shadow-md p-space-md flex items-center justify-between flex-wrap gap-space-sm">
+                            <div class="flex items-center gap-space-sm">
+                                <div class="w-3 h-3 rounded-full bg-secondary animate-pulse"></div>
+                                <h2 class="font-headline-md text-headline-md text-primary">Mis Viajes Registrados</h2>
+                                <span
+                                    class="bg-surface-container px-space-sm py-0.5 rounded-full font-label-sm text-label-sm text-primary"
+                                    id="trips-counter">3 itinerarios</span>
+                            </div>
+                            <div class="flex items-center gap-space-xs">
+                                <button
+                                    class="p-2 rounded-lg bg-surface-container-low text-primary hover:bg-surface-container transition-colors"
+                                    title="Filtrar cronológicamente" type="button">
+                                    <span class="material-symbols-outlined text-sm">swap_vert</span>
+                                </button>
+                                <button
+                                    class="p-2 rounded-lg bg-surface-container-low text-primary hover:bg-surface-container transition-colors"
+                                    title="Ver archivo" type="button">
+                                    <span class="material-symbols-outlined text-sm">inventory_2</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="space-y-space-md" id="trips-container">
+                            <article
+                                class="bg-surface-container-lowest rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col md:flex-row">
+                                <div class="md:w-5/12 relative min-h-[180px] bg-primary">
+                                    <img class="w-full h-full object-cover"
+                                        data-alt="Breathtaking Arctic fjord in Tromso Norway with snow-peaked mountains reflected in deep blue water under the midnight sun, with vibrant coastal fishing villages"
+                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCIdq4NGNZxOmVQyJ6ECGskLcCvC-puT0jCtx9Y5Gu1V6FXIzgLZP6-N5TFFmTLyp9pF8psfpnTs8CKSt1pZxs2xWGxCQjA50afXJPhBp4cK1mXtlpfHP0lACVslNOAbYjq0r-7YlxGTd9QB7nq4WupPCz4aeINiye0_-Oq9yn5eMRMBdJxgV04GQiOYlVT2ufaJ32FObpFA-7JEfly5ZGRUDYJWgzjZ34LDEybbhRImEswD4tvmA" />
+                                    <div
+                                        class="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-transparent md:hidden">
+                                    </div>
+                                    <span
+                                        class="absolute top-space-sm left-space-sm px-space-sm py-1 rounded-full bg-surface-container-lowest/90 backdrop-blur-sm text-primary font-label-sm text-label-sm flex items-center gap-1 shadow-sm">
+                                        <span class="w-2 h-2 rounded-full bg-secondary"></span> En Curso
+                                    </span>
+                                </div>
+                                <div class="p-space-md md:w-7/12 flex flex-col justify-between">
+                                    <div>
+                                        <div class="flex items-start justify-between gap-space-xs mb-space-xs">
+                                            <a class="font-headline-sm text-headline-sm text-primary hover:text-secondary transition-colors line-clamp-1"
+                                                href="detalle_viaje.html">
+                                                Viaje a Noruega: Tromsø & Islas Lofoten
+                                            </a>
+                                            <span
+                                                class="font-headline-sm text-headline-sm text-secondary whitespace-nowrap bg-secondary-fixed/30 px-space-xs py-0.5 rounded text-right">
+                                                $3,200
+                                            </span>
+                                        </div>
+                                        <div
+                                            class="flex items-center gap-space-xs text-on-surface-variant font-label-md text-label-md mb-space-sm">
+                                            <span
+                                                class="material-symbols-outlined text-sm text-secondary">calendar_today</span>
+                                            <span>12 May 2025 al 24 May 2025</span>
+                                        </div>
+                                        <p
+                                            class="font-body-md text-body-md text-on-surface-variant line-clamp-2 mb-space-md">
+                                            Expedición ártica de 12 etapas a través de fiordos dramáticos, campamentos
+                                            costeros, puentes curvos y sol de medianoche.
+                                        </p>
+                                    </div>
+                                    <div
+                                        class="flex items-center justify-between pt-space-xs bg-surface-container-low/40 -mx-space-md -mb-space-md p-space-md">
+                                        <div class="flex items-center gap-space-xs">
+                                            <span
+                                                class="material-symbols-outlined text-sm text-outline">location_on</span>
+                                            <span
+                                                class="font-label-sm text-label-sm text-on-surface-variant uppercase">Escandinavia</span>
+                                        </div>
+                                        <a class="font-label-lg text-label-lg text-secondary hover:text-primary transition-colors flex items-center gap-1"
+                                            href="detalle_viaje.html">
+                                            <span>Ver Detalle del Viaje</span>
+                                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </article>
+                            <article
+                                class="bg-surface-container-lowest rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col md:flex-row">
+                                <div class="md:w-5/12 relative min-h-[180px] bg-primary">
+                                    <img class="w-full h-full object-cover"
+                                        data-alt="Traditional wooden pagodas and serene zen gardens in Kyoto Japan with red torii gates and misty Japanese Alps in the horizon with soft golden hour light"
+                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuDB-WBnYTRpjYgHAf6F4rE_fLnUFiUGq5SMfas9IDfWMMXIjyu6M4HD7O6oPKY2ttXYlUMFdhJC_rfhoxGYVbtnHoZNSCaolZABWs4qaAEaNMyOAUQ0MgIviP1ajgANV2rfybf2cEQIQihlRUop8FH3MgFBiVpvdPD1TCK5dgth1bF3utPplcJq7WeupS4cNec_ODzJBdtONdTM5Oq2nK2bXigh3pzv5HFNGnCpuUmHAViIwgr3bg" />
+                                    <div
+                                        class="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-transparent md:hidden">
+                                    </div>
+                                    <span
+                                        class="absolute top-space-sm left-space-sm px-space-sm py-1 rounded-full bg-surface-container-lowest/90 backdrop-blur-sm text-primary font-label-sm text-label-sm flex items-center gap-1 shadow-sm">
+                                        <span class="w-2 h-2 rounded-full bg-outline"></span> Planificado
+                                    </span>
+                                </div>
+                                <div class="p-space-md md:w-7/12 flex flex-col justify-between">
+                                    <div>
+                                        <div class="flex items-start justify-between gap-space-xs mb-space-xs">
+                                            <a class="font-headline-sm text-headline-sm text-primary hover:text-secondary transition-colors line-clamp-1"
+                                                href="detalle_viaje.html">
+                                                Japón: Templos de Kioto y Alpes Japoneses
+                                            </a>
+                                            <span
+                                                class="font-headline-sm text-headline-sm text-secondary whitespace-nowrap bg-secondary-fixed/30 px-space-xs py-0.5 rounded text-right">
+                                                $2,800
+                                            </span>
+                                        </div>
+                                        <div
+                                            class="flex items-center gap-space-xs text-on-surface-variant font-label-md text-label-md mb-space-sm">
+                                            <span
+                                                class="material-symbols-outlined text-sm text-secondary">calendar_today</span>
+                                            <span>04 Oct 2025 al 18 Oct 2025</span>
+                                        </div>
+                                        <p
+                                            class="font-body-md text-body-md text-on-surface-variant line-clamp-2 mb-space-md">
+                                            Inmersión en aldeas tradicionales de Shirakawa-go, senderos sagrados de
+                                            Kumano Kodo y templos centenarios de Kioto.
+                                        </p>
+                                    </div>
+                                    <div
+                                        class="flex items-center justify-between pt-space-xs bg-surface-container-low/40 -mx-space-md -mb-space-md p-space-md">
+                                        <div class="flex items-center gap-space-xs">
+                                            <span
+                                                class="material-symbols-outlined text-sm text-outline">location_on</span>
+                                            <span
+                                                class="font-label-sm text-label-sm text-on-surface-variant uppercase">Asia
+                                                Oriental</span>
+                                        </div>
+                                        <a class="font-label-lg text-label-lg text-secondary hover:text-primary transition-colors flex items-center gap-1"
+                                            href="detalle_viaje.html">
+                                            <span>Ver Detalle del Viaje</span>
+                                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </article>
+                            <article
+                                class="bg-surface-container-lowest rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col md:flex-row">
+                                <div class="md:w-5/12 relative min-h-[180px] bg-primary">
+                                    <img class="w-full h-full object-cover"
+                                        data-alt="Spectacular turquoise glacial lake with huge icebergs in Argentine Patagonia, dramatic jagged granite peaks of Mount Fitz Roy under dramatic cloudy blue sky"
+                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuAQudGhGLirhklB35RLmw-vce9dvwKMa0vYfbhRMQCBkW-HK8tLMQW9kiKO_2kMQeNmh5G4JQbDcXC0GrH1RqYZiJZa-unQ76QYTl3faHUWojnOWARv9gYYCQDLgmtxvJOk2zdBK-wl3Cr-CWz_sQdjpVGbyqGcfXcD_fuU6pZOGZ1bcEpS8gNSh230CHpwxQLSZmJ3xGE8mccB-iXaV_sQXCOQKPNkLpHqBadS0jCPL6CBgCHfkA" />
+                                    <div
+                                        class="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-transparent md:hidden">
+                                    </div>
+                                    <span
+                                        class="absolute top-space-sm left-space-sm px-space-sm py-1 rounded-full bg-surface-container-lowest/90 backdrop-blur-sm text-primary font-label-sm text-label-sm flex items-center gap-1 shadow-sm">
+                                        <span class="w-2 h-2 rounded-full bg-outline"></span> Completado
+                                    </span>
+                                </div>
+                                <div class="p-space-md md:w-7/12 flex flex-col justify-between">
+                                    <div>
+                                        <div class="flex items-start justify-between gap-space-xs mb-space-xs">
+                                            <a class="font-headline-sm text-headline-sm text-primary hover:text-secondary transition-colors line-clamp-1"
+                                                href="detalle_viaje.html">
+                                                Ruta 40 & Glaciares de la Patagonia
+                                            </a>
+                                            <span
+                                                class="font-headline-sm text-headline-sm text-secondary whitespace-nowrap bg-secondary-fixed/30 px-space-xs py-0.5 rounded text-right">
+                                                $2,100
+                                            </span>
+                                        </div>
+                                        <div
+                                            class="flex items-center gap-space-xs text-on-surface-variant font-label-md text-label-md mb-space-sm">
+                                            <span
+                                                class="material-symbols-outlined text-sm text-secondary">calendar_today</span>
+                                            <span>10 Ene 2025 al 23 Ene 2025</span>
+                                        </div>
+                                        <p
+                                            class="font-body-md text-body-md text-on-surface-variant line-clamp-2 mb-space-md">
+                                            Recorrido por la mítica ruta austral, trekking en el glaciar Perito Moreno y
+                                            vistas imponentes del monte Fitz Roy.
+                                        </p>
+                                    </div>
+                                    <div
+                                        class="flex items-center justify-between pt-space-xs bg-surface-container-low/40 -mx-space-md -mb-space-md p-space-md">
+                                        <div class="flex items-center gap-space-xs">
+                                            <span
+                                                class="material-symbols-outlined text-sm text-outline">location_on</span>
+                                            <span
+                                                class="font-label-sm text-label-sm text-on-surface-variant uppercase">Sudamérica</span>
+                                        </div>
+                                        <a class="font-label-lg text-label-lg text-secondary hover:text-primary transition-colors flex items-center gap-1"
+                                            href="detalle_viaje.html">
+                                            <span>Ver Detalle del Viaje</span>
+                                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </article>
+                        </div>
+                        <div class="hidden bg-surface-container-lowest rounded-xl shadow-sm p-space-xl flex-col items-center justify-center text-center"
+                            id="empty-state">
+                            <div
+                                class="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center text-outline mb-space-md">
+                                <span class="material-symbols-outlined text-3xl">luggage</span>
+                            </div>
+                            <h3 class="font-headline-sm text-headline-sm text-primary mb-space-xs">No hay viajes
+                                registrados aún</h3>
+                            <p class="font-body-md text-body-md text-on-surface-variant max-w-sm mb-space-md">
+                                Comienza usando el formulario a tu izquierda para crear tu primer itinerario y bitácora
+                                de viaje.
+                            </p>
+                            <span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Django
+                                template fallback {% else %}</span>
+                        </div>
+                    </section>
+                </div>
             </div>
+            <script>
+                const textarea = document.getElementById('id_descripcion');
+                const counter = document.getElementById('char-counter');
+                if (textarea && counter) {
+                    textarea.addEventListener('input', () => {
+                        counter.textContent = `${textarea.value.length}/500`;
+                    });
+                }
+
+                function addNewTrip() {
+                    const destino = document.getElementById('id_destino').value;
+                    const desc = document.getElementById('id_descripcion').value;
+                    const fInicio = document.getElementById('id_fecha_inicio').value;
+                    const fFin = document.getElementById('id_fecha_fin').value;
+                    const presupuesto = document.getElementById('id_presupuesto').value;
+
+                    if (!destino || !desc || !presupuesto) return;
+
+                    const container = document.getElementById('trips-container');
+                    const newCard = document.createElement('article');
+                    newCard.className = 'bg-surface-container-lowest rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col md:flex-row animate-fade-in';
+
+                    newCard.innerHTML = `
+        <div class="md:w-5/12 relative min-h-[180px] bg-primary flex items-center justify-center">
+          <div class="absolute inset-0 bg-primary/90 flex flex-col items-center justify-center text-on-primary p-space-md text-center">
+            <span class="material-symbols-outlined text-3xl mb-1 text-tertiary-fixed-dim">near_me</span>
+            <span class="font-label-sm text-label-sm uppercase">Nuevo Itinerario</span>
+          </div>
+          <span class="absolute top-space-sm left-space-sm px-space-sm py-1 rounded-full bg-surface-container-lowest/90 backdrop-blur-sm text-primary font-label-sm text-label-sm flex items-center gap-1 shadow-sm">
+            <span class="w-2 h-2 rounded-full bg-secondary"></span> Guardado
+          </span>
         </div>
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <div class="p-space-md md:w-7/12 flex flex-col justify-between">
+          <div>
+            <div class="flex items-start justify-between gap-space-xs mb-space-xs">
+              <a href="detalle_viaje.html" class="font-headline-sm text-headline-sm text-primary hover:text-secondary transition-colors line-clamp-1">
+                ${destino}
+              </a>
+              <span class="font-headline-sm text-headline-sm text-secondary whitespace-nowrap bg-secondary-fixed/30 px-space-xs py-0.5 rounded text-right">
+                $${Number(presupuesto).toLocaleString()}
+              </span>
+            </div>
+            <div class="flex items-center gap-space-xs text-on-surface-variant font-label-md text-label-md mb-space-sm">
+              <span class="material-symbols-outlined text-sm text-secondary">calendar_today</span>
+              <span>${fInicio} al ${fFin}</span>
+            </div>
+            <p class="font-body-md text-body-md text-on-surface-variant line-clamp-2 mb-space-md">
+              ${desc}
+            </p>
+          </div>
+          <div class="flex items-center justify-between pt-space-xs bg-surface-container-low/40 -mx-space-md -mb-space-md p-space-md">
+            <div class="flex items-center gap-space-xs">
+              <span class="material-symbols-outlined text-sm text-outline">location_on</span>
+              <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Ruta Guardada</span>
+            </div>
+            <a href="detalle_viaje.html" class="font-label-lg text-label-lg text-secondary hover:text-primary transition-colors flex items-center gap-1">
+              <span>Ver Detalle del Viaje</span>
+              <span class="material-symbols-outlined text-sm">arrow_forward</span>
+            </a>
+          </div>
+        </div>
+      `;
+
+                    container.prepend(newCard);
+                    document.getElementById('id_destino').value = '';
+                    document.getElementById('id_descripcion').value = '';
+                    document.getElementById('id_presupuesto').value = '';
+                    if (counter) counter.textContent = '0/500';
+
+                    const counterBadge = document.getElementById('trips-counter');
+                    if (counterBadge) {
+                        const count = container.children.length;
+                        counterBadge.textContent = `${count} itinerarios`;
+                    }
+                }
+            </script>
+        </div>
+    </main>
+    <footer class="w-full bg-surface-container-lowest shadow-[0_-1px_8px_rgba(10,37,64,0.03)] py-space-xl">
+        <div
+            class="w-full px-margin md:px-margin-tablet lg:px-margin-desktop flex flex-col md:flex-row items-center justify-between gap-space-md">
+            <div class="flex items-center gap-space-sm"><img alt="Diario de Viajes Logo"
+                    class="h-6 w-auto object-contain"
+                    src="https://lh3.googleusercontent.com/aida/AEtjO1WeZHjAb9cNlibm--puhPsAgXm6qiDSZtya18unmPX7e_7QR_gncyeTJV5OtZGAJwEijxVECECXXDf9_3K5m3nwwGwifrC_fftN5MB0WqvfJFgDCJG6njSzZVzVG5x_WNHSF9A1MesYWK5DXseDdT6aG7S6Alj9xBEvnlRkJsAeGS0UyhVUDp3sc8yzXHcOZH70VwJfgggxSgAqCvAsqrkOdZ5zJWyiShqCP4_jWIjDPGwzLHZ3SQn3" /><span
+                    class="font-label-md text-label-md text-on-surface-variant">© 2024 Diario de Viajes. Cuaderno de
+                    bitácora y memorias.</span></div>
+            <div class="flex items-center gap-space-lg"><a
+                    class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors"
+                    href="#">Privacidad</a><a
+                    class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors"
+                    href="#">Términos de servicio</a><a
+                    class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors"
+                    href="#">Soporte</a></div>
+        </div>
+    </footer>
 </body>
+
 </html>

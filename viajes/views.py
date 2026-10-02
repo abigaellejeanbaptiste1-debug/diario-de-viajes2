@@ -18,7 +18,7 @@ from .forms import (
     ViajeForm,
 )
 from .money import format_clp
-from .models import Dia, Photo, Viaje
+from .models import Actividad, Dia, Photo, Viaje
 
 
 def _render_viajes(request, form=None, editing=False, viaje_en_edicion=None):
@@ -128,11 +128,38 @@ def detalle_viaje(request, viaje_id):
     form_dia = DiaForm()
     form_actividad = ActividadForm()
     dia_id_formulario = None
+    dia_id_edicion = None
+    actividad_id_edicion = None
+
+    if request.method == "GET":
+        dia_id_edicion = request.GET.get("editar_dia")
+        actividad_id_edicion = request.GET.get("editar_actividad")
+        if dia_id_edicion and request.user.has_perm("viajes.change_dia"):
+            dia_edicion = get_object_or_404(viaje.dias, pk=dia_id_edicion)
+            dia_id_edicion = dia_edicion.pk
+            form_dia = DiaForm(instance=dia_edicion)
+        else:
+            dia_id_edicion = None
+        if actividad_id_edicion and request.user.has_perm(
+            "viajes.change_actividad"
+        ):
+            actividad_edicion = get_object_or_404(
+                Actividad.objects.filter(dia__viaje=viaje), pk=actividad_id_edicion
+            )
+            actividad_id_edicion = actividad_edicion.pk
+            form_actividad = ActividadForm(instance=actividad_edicion)
+            dia_id_formulario = actividad_edicion.dia_id
+        else:
+            actividad_id_edicion = None
 
     if request.method == "POST":
         permission_map = {
             "form_dia": "viajes.add_dia",
+            "form_editar_dia": "viajes.change_dia",
+            "eliminar_dia": "viajes.delete_dia",
             "form_actividad": "viajes.add_actividad",
+            "form_editar_actividad": "viajes.change_actividad",
+            "eliminar_actividad": "viajes.delete_actividad",
         }
         permission = next(
             (perm for marker, perm in permission_map.items() if marker in request.POST),
@@ -152,6 +179,23 @@ def detalle_viaje(request, viaje_id):
             nuevo_dia.save()
             messages.success(request, "Día registrado correctamente.")
             return redirect("detalle_viaje", viaje_id=viaje.pk)
+    elif request.method == "POST" and "form_editar_dia" in request.POST:
+        dia = get_object_or_404(viaje.dias, pk=request.POST.get("dia_id"))
+        dia_id_edicion = dia.pk
+        form_dia = DiaForm(request.POST, request.FILES, instance=dia)
+        if form_dia.is_valid():
+            form_dia.save()
+            messages.success(request, "Día actualizado correctamente.")
+            return redirect("detalle_viaje", viaje_id=viaje.pk)
+    elif request.method == "POST" and "eliminar_dia" in request.POST:
+        dia = get_object_or_404(viaje.dias, pk=request.POST.get("dia_id"))
+        numero_dia = dia.numero_dia
+        dia.delete()
+        messages.success(
+            request,
+            f"El día {numero_dia} y sus actividades se eliminaron correctamente.",
+        )
+        return redirect("detalle_viaje", viaje_id=viaje.pk)
     elif request.method == "POST" and "form_actividad" in request.POST:
         dia = get_object_or_404(viaje.dias, pk=request.POST.get("dia_id"))
         dia_id_formulario = dia.pk
@@ -162,6 +206,30 @@ def detalle_viaje(request, viaje_id):
             nueva_actividad.save()
             messages.success(request, "Actividad registrada correctamente.")
             return redirect("detalle_viaje", viaje_id=viaje.pk)
+    elif request.method == "POST" and "form_editar_actividad" in request.POST:
+        actividad = get_object_or_404(
+            Actividad.objects.filter(dia__viaje=viaje),
+            pk=request.POST.get("actividad_id"),
+        )
+        actividad_id_edicion = actividad.pk
+        dia_id_formulario = actividad.dia_id
+        form_actividad = ActividadForm(request.POST, instance=actividad)
+        if form_actividad.is_valid():
+            form_actividad.save()
+            messages.success(request, "Actividad actualizada correctamente.")
+            return redirect("detalle_viaje", viaje_id=viaje.pk)
+    elif request.method == "POST" and "eliminar_actividad" in request.POST:
+        actividad = get_object_or_404(
+            Actividad.objects.filter(dia__viaje=viaje),
+            pk=request.POST.get("actividad_id"),
+        )
+        nombre_actividad = actividad.nombre
+        actividad.delete()
+        messages.success(
+            request,
+            f"La actividad «{nombre_actividad}» se eliminó correctamente.",
+        )
+        return redirect("detalle_viaje", viaje_id=viaje.pk)
 
     gastado = viaje.presupuesto_gastado
     context = {
@@ -170,6 +238,8 @@ def detalle_viaje(request, viaje_id):
         "form_dia": form_dia,
         "form_actividad": form_actividad,
         "dia_id_formulario": dia_id_formulario,
+        "dia_id_edicion": dia_id_edicion,
+        "actividad_id_edicion": actividad_id_edicion,
         "presupuesto_total": viaje.presupuesto,
         "presupuesto_gastado": gastado,
         "presupuesto_disponible": viaje.presupuesto - gastado,

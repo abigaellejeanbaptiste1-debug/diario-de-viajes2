@@ -190,6 +190,228 @@ class PresupuestoViajeTests(TestCase):
         self.assertContains(detalle, "$487.500 CLP")
         self.assertNotContains(detalle, "Registrar gasto")
 
+    def test_edita_dia_y_precarga_sus_datos(self):
+        dia = Dia.objects.create(
+            viaje=self.viaje,
+            numero_dia=1,
+            fecha="2026-12-10",
+            titulo="Llegada",
+            descripcion="Descripción anterior",
+        )
+        detalle_url = reverse("detalle_viaje", args=[self.viaje.pk])
+
+        response = self.client.get(detalle_url, {"editar_dia": dia.pk})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["dia_id_edicion"], dia.pk)
+        self.assertEqual(response.context["form_dia"].instance, dia)
+
+        response = self.client.post(
+            detalle_url,
+            {
+                "form_editar_dia": "1",
+                "dia_id": str(dia.pk),
+                "numero_dia": "2",
+                "fecha": "2026-12-11",
+                "titulo": "Llegada actualizada",
+                "descripcion": "Descripción nueva",
+                "ubicacion_gps": "",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        dia.refresh_from_db()
+        self.assertEqual(dia.numero_dia, 2)
+        self.assertEqual(dia.titulo, "Llegada actualizada")
+        self.assertEqual(dia.descripcion, "Descripción nueva")
+
+    def test_elimina_dia_y_sus_actividades(self):
+        dia = Dia.objects.create(
+            viaje=self.viaje,
+            numero_dia=1,
+            fecha="2026-12-10",
+            titulo="Llegada",
+        )
+        actividad = Actividad.objects.create(
+            dia=dia,
+            nombre="Bus",
+            hora="09:30",
+            costo=Decimal("12500"),
+        )
+
+        response = self.client.post(
+            reverse("detalle_viaje", args=[self.viaje.pk]),
+            {"eliminar_dia": "1", "dia_id": str(dia.pk)},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Dia.objects.filter(pk=dia.pk).exists())
+        self.assertFalse(Actividad.objects.filter(pk=actividad.pk).exists())
+        self.assertEqual(self.viaje.presupuesto_gastado, Decimal("0"))
+        self.assertRedirects(response, reverse("detalle_viaje", args=[self.viaje.pk]))
+
+    def test_edita_actividad_y_actualiza_el_presupuesto(self):
+        dia = Dia.objects.create(
+            viaje=self.viaje,
+            numero_dia=1,
+            fecha="2026-12-10",
+            titulo="Llegada",
+        )
+        actividad = Actividad.objects.create(
+            dia=dia,
+            nombre="Bus",
+            hora="09:30",
+            costo=Decimal("12500"),
+        )
+        detalle_url = reverse("detalle_viaje", args=[self.viaje.pk])
+
+        response = self.client.get(detalle_url, {"editar_actividad": actividad.pk})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["actividad_id_edicion"], actividad.pk)
+        self.assertEqual(response.context["form_actividad"].instance, actividad)
+
+        response = self.client.post(
+            detalle_url,
+            {
+                "form_editar_actividad": "1",
+                "actividad_id": str(actividad.pk),
+                "nombre": "Traslado privado",
+                "hora": "10:15",
+                "ubicacion": "Puerto Natales",
+                "categoria": "Transporte",
+                "costo": "20000",
+                "descripcion": "Traslado al alojamiento",
+                "rating": "",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        actividad.refresh_from_db()
+        self.assertEqual(actividad.nombre, "Traslado privado")
+        self.assertEqual(actividad.costo, Decimal("20000"))
+        self.assertEqual(self.viaje.presupuesto_gastado, Decimal("20000"))
+
+    def test_elimina_actividad_y_recalcula_el_presupuesto(self):
+        dia = Dia.objects.create(
+            viaje=self.viaje,
+            numero_dia=1,
+            fecha="2026-12-10",
+            titulo="Llegada",
+        )
+        actividad = Actividad.objects.create(
+            dia=dia,
+            nombre="Bus",
+            hora="09:30",
+            costo=Decimal("12500"),
+        )
+
+        response = self.client.post(
+            reverse("detalle_viaje", args=[self.viaje.pk]),
+            {"eliminar_actividad": "1", "actividad_id": str(actividad.pk)},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Actividad.objects.filter(pk=actividad.pk).exists())
+        self.assertEqual(self.viaje.presupuesto_gastado, Decimal("0"))
+
+    def test_crud_del_itinerario_rechaza_objetos_de_otro_viaje(self):
+        otro_viaje = Viaje.objects.create(
+            titulo="Otro viaje",
+            fecha_fin="2026-12-22",
+            pais="Chile",
+            ciudad="Natales",
+            presupuesto=Decimal("100000"),
+        )
+        dia_ajeno = Dia.objects.create(
+            viaje=otro_viaje,
+            numero_dia=1,
+            fecha="2026-12-21",
+            titulo="Día ajeno",
+        )
+        actividad_ajena = Actividad.objects.create(
+            dia=dia_ajeno,
+            nombre="Actividad ajena",
+            hora="09:30",
+        )
+        detalle_url = reverse("detalle_viaje", args=[self.viaje.pk])
+
+        respuestas = [
+            self.client.post(
+                detalle_url,
+                {
+                    "form_editar_dia": "1",
+                    "dia_id": str(dia_ajeno.pk),
+                    "numero_dia": "2",
+                    "fecha": "2026-12-22",
+                    "titulo": "Manipulado",
+                },
+            ),
+            self.client.post(
+                detalle_url,
+                {
+                    "eliminar_dia": "1",
+                    "dia_id": str(dia_ajeno.pk),
+                },
+            ),
+            self.client.post(
+                detalle_url,
+                {
+                    "form_editar_actividad": "1",
+                    "actividad_id": str(actividad_ajena.pk),
+                    "nombre": "Manipulada",
+                    "hora": "10:00",
+                    "costo": "1",
+                },
+            ),
+            self.client.post(
+                detalle_url,
+                {
+                    "eliminar_actividad": "1",
+                    "actividad_id": str(actividad_ajena.pk),
+                },
+            ),
+        ]
+
+        self.assertTrue(all(response.status_code == 404 for response in respuestas))
+        self.assertTrue(Dia.objects.filter(pk=dia_ajeno.pk).exists())
+        self.assertTrue(Actividad.objects.filter(pk=actividad_ajena.pk).exists())
+
+    def test_crud_del_itinerario_requiere_permisos_individuales(self):
+        dia = Dia.objects.create(
+            viaje=self.viaje,
+            numero_dia=1,
+            fecha="2026-12-10",
+            titulo="Llegada",
+        )
+        actividad = Actividad.objects.create(
+            dia=dia,
+            nombre="Bus",
+            hora="09:30",
+            costo=Decimal("12500"),
+        )
+        usuario = get_user_model().objects.create_user(
+            username="lector",
+            password="clave-segura-123",
+        )
+        self.client.force_login(usuario)
+        detalle_url = reverse("detalle_viaje", args=[self.viaje.pk])
+        acciones = [
+            {"form_editar_dia": "1", "dia_id": str(dia.pk)},
+            {"eliminar_dia": "1", "dia_id": str(dia.pk)},
+            {"form_editar_actividad": "1", "actividad_id": str(actividad.pk)},
+            {"eliminar_actividad": "1", "actividad_id": str(actividad.pk)},
+        ]
+
+        for datos in acciones:
+            with self.subTest(accion=next(iter(datos))):
+                response = self.client.post(detalle_url, datos)
+                self.assertEqual(response.status_code, 403)
+
+        self.assertTrue(Dia.objects.filter(pk=dia.pk).exists())
+        self.assertTrue(Actividad.objects.filter(pk=actividad.pk).exists())
+        self.assertEqual(self.viaje.presupuesto_gastado, Decimal("12500"))
+
     def test_crear_viaje_desde_el_listado_lo_guarda_y_lo_muestra(self):
         response = self.client.post(
             reverse("lista_viajes"),

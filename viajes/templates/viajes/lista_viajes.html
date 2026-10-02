@@ -338,8 +338,58 @@
                                         <span class="px-2.5 py-0.5 rounded-full bg-secondary/10 text-secondary font-label-sm text-label-sm">Día {{ dia.numero_dia }} · {{ dia.fecha|date:"d M Y" }}</span>
                                         <h3 class="font-headline-sm text-headline-sm text-primary mt-1">{{ dia.titulo }}</h3>
                                     </div>
-                                    <span class="self-start px-2.5 py-1 rounded bg-surface-container-low text-outline font-label-sm text-label-sm">{{ dia.actividades.count }} Actividades</span>
+                                    <div class="flex flex-wrap items-center gap-space-xs">
+                                        <span class="px-2.5 py-1 rounded bg-surface-container-low text-outline font-label-sm text-label-sm">{{ dia.actividades.count }} Actividades</span>
+                                        {% if perms.viajes.change_dia %}
+                                        <a class="rounded-lg bg-surface-container px-space-sm py-1 font-label-sm text-label-sm text-secondary" href="{% url 'detalle_viaje' viaje.pk %}?editar_dia={{ dia.pk }}">Editar día</a>
+                                        {% endif %}
+                                        {% if perms.viajes.delete_dia %}
+                                        <form action="{% url 'detalle_viaje' viaje.pk %}" method="POST" onsubmit="return confirm('¿Eliminar este día y todas sus actividades y fotos?');">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="eliminar_dia" value="1" />
+                                            <input type="hidden" name="dia_id" value="{{ dia.pk }}" />
+                                            <button class="rounded-lg bg-error-container px-space-sm py-1 font-label-sm text-label-sm text-on-error-container" type="submit">Eliminar día</button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
                                 </div>
+                                {% if perms.viajes.change_dia %}
+                                <details class="rounded-lg bg-surface-container-low p-space-md" {% if dia_id_edicion == dia.pk %}open{% endif %}>
+                                    <summary class="cursor-pointer font-label-md text-label-md text-secondary">Editar los datos del día</summary>
+                                    <form action="{% url 'detalle_viaje' viaje.pk %}" class="mt-space-sm grid grid-cols-1 md:grid-cols-2 gap-space-md" enctype="multipart/form-data" method="POST">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="form_editar_dia" value="1" />
+                                        <input type="hidden" name="dia_id" value="{{ dia.pk }}" />
+                                        {% if dia_id_edicion == dia.pk and form_dia.errors %}
+                                        <div class="md:col-span-2 rounded-lg bg-error-container p-space-sm text-on-error-container" role="alert">{{ form_dia.errors }}</div>
+                                        {% endif %}
+                                        <label class="font-label-sm text-label-sm text-on-surface">Número de día
+                                            {{ form_dia.numero_dia }}
+                                        </label>
+                                        <label class="font-label-sm text-label-sm text-on-surface">Fecha
+                                            {{ form_dia.fecha }}
+                                        </label>
+                                        <label class="font-label-sm text-label-sm text-on-surface md:col-span-2">Título
+                                            {{ form_dia.titulo }}
+                                        </label>
+                                        <label class="font-label-sm text-label-sm text-on-surface md:col-span-2">Descripción
+                                            {{ form_dia.descripcion }}
+                                        </label>
+                                        <label class="font-label-sm text-label-sm text-on-surface md:col-span-2">Ubicación GPS
+                                            {{ form_dia.ubicacion_gps }}
+                                        </label>
+                                        <label class="font-label-sm text-label-sm text-on-surface md:col-span-2">Fotografía (opcional)
+                                            {% if dia.foto_principal %}
+                                            <span class="block py-1">Imagen actual: <a class="text-secondary underline" href="{{ dia.foto_principal.url }}" target="_blank" rel="noopener">Ver fotografía</a></span>
+                                            {% endif %}
+                                            {{ form_dia.foto_principal }}
+                                        </label>
+                                        <div class="md:col-span-2 flex justify-end">
+                                            <button class="rounded-lg bg-secondary px-space-md py-2 font-label-md text-label-md text-on-primary" type="submit">Guardar cambios del día</button>
+                                        </div>
+                                    </form>
+                                </details>
+                                {% endif %}
                                 {% if dia.descripcion %}<p class="font-body-md text-body-md text-on-surface-variant bg-surface-container-low/60 p-space-md rounded-lg">{{ dia.descripcion }}</p>{% endif %}
                                 <section class="rounded-lg border border-surface-container-highest p-space-md">
                                     <div class="flex items-center justify-between gap-space-sm">
@@ -350,7 +400,8 @@
                                     </div>
                                 </section>
                                 {% for actividad in dia.actividades.all %}
-                                <div class="p-space-md rounded-lg bg-surface-container-low flex items-start justify-between gap-space-sm">
+                                <article class="p-space-md rounded-lg bg-surface-container-low flex flex-col gap-space-sm">
+                                    <div class="flex items-start justify-between gap-space-sm">
                                     <div>
                                         <span class="font-label-md text-label-md text-secondary">{{ actividad.hora|time:"H:i" }}</span>
                                         <h4 class="font-label-lg text-label-lg text-primary">{{ actividad.nombre }}</h4>
@@ -358,18 +409,71 @@
                                         {% if actividad.descripcion %}<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">{{ actividad.descripcion }}</p>{% endif %}
                                     </div>
                                     <span class="font-label-md text-label-md text-primary">{{ actividad.costo_formateado }} CLP</span>
-                                </div>
+                                    </div>
+                                    {% if perms.viajes.change_actividad or perms.viajes.delete_actividad %}
+                                    <div class="flex flex-wrap items-center gap-space-xs border-t border-surface-container-highest pt-space-xs">
+                                        {% if perms.viajes.change_actividad %}
+                                        <a class="rounded-lg bg-surface-container-lowest px-space-sm py-1 font-label-sm text-label-sm text-secondary" href="{% url 'detalle_viaje' viaje.pk %}?editar_actividad={{ actividad.pk }}">Editar actividad</a>
+                                        {% endif %}
+                                        {% if perms.viajes.delete_actividad %}
+                                        <form action="{% url 'detalle_viaje' viaje.pk %}" method="POST" onsubmit="return confirm('¿Eliminar esta actividad? Su costo se descontará del total gastado.');">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="eliminar_actividad" value="1" />
+                                            <input type="hidden" name="actividad_id" value="{{ actividad.pk }}" />
+                                            <button class="rounded-lg bg-error-container px-space-sm py-1 font-label-sm text-label-sm text-on-error-container" type="submit">Eliminar actividad</button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                    {% if perms.viajes.change_actividad %}
+                                    <details class="rounded-lg bg-surface-container-lowest p-space-sm" {% if actividad_id_edicion == actividad.pk %}open{% endif %}>
+                                        <summary class="cursor-pointer font-label-sm text-label-sm text-secondary">Editar datos de actividad</summary>
+                                        <form action="{% url 'detalle_viaje' viaje.pk %}" class="mt-space-sm grid grid-cols-1 md:grid-cols-2 gap-space-sm" method="POST">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="form_editar_actividad" value="1" />
+                                            <input type="hidden" name="actividad_id" value="{{ actividad.pk }}" />
+                                            {% if actividad_id_edicion == actividad.pk and form_actividad.errors %}
+                                            <div class="md:col-span-2 rounded-lg bg-error-container p-space-sm text-on-error-container" role="alert">{{ form_actividad.errors }}</div>
+                                            {% endif %}
+                                            <label class="font-label-sm text-label-sm text-on-surface">Nombre
+                                                {{ form_actividad.nombre }}
+                                            </label>
+                                            <label class="font-label-sm text-label-sm text-on-surface">Hora
+                                                {{ form_actividad.hora }}
+                                            </label>
+                                            <label class="font-label-sm text-label-sm text-on-surface">Ubicación
+                                                {{ form_actividad.ubicacion }}
+                                            </label>
+                                            <label class="font-label-sm text-label-sm text-on-surface">Categoría
+                                                {{ form_actividad.categoria }}
+                                            </label>
+                                            <label class="font-label-sm text-label-sm text-on-surface">Costo (CLP)
+                                                {{ form_actividad.costo }}
+                                            </label>
+                                            <label class="font-label-sm text-label-sm text-on-surface">Descripción
+                                                {{ form_actividad.descripcion }}
+                                            </label>
+                                            <label class="font-label-sm text-label-sm text-on-surface">Calificación
+                                                {{ form_actividad.rating }}
+                                            </label>
+                                            <div class="md:col-span-2 flex justify-end">
+                                                <button class="rounded-lg bg-secondary px-space-md py-2 font-label-md text-label-md text-on-primary" type="submit">Guardar cambios</button>
+                                            </div>
+                                        </form>
+                                    </details>
+                                    {% endif %}
+                                </article>
                                 {% empty %}
                                 <p class="font-body-sm text-body-sm text-on-surface-variant">Todavía no hay actividades para este día.</p>
                                 {% endfor %}
                                 {% if perms.viajes.add_actividad %}
-                                <details class="rounded-lg bg-surface-container-low p-space-md">
+                                <details class="rounded-lg bg-surface-container-low p-space-md" {% if dia_id_formulario == dia.pk and not actividad_id_edicion and form_actividad.errors %}open{% endif %}>
                                     <summary class="cursor-pointer font-label-md text-label-md text-secondary">Agregar actividad</summary>
                                     <form action="{% url 'detalle_viaje' viaje.pk %}" class="mt-space-sm grid grid-cols-1 md:grid-cols-2 gap-space-md" method="POST">
                                         {% csrf_token %}
                                         <input type="hidden" name="form_actividad" value="1" />
                                         <input type="hidden" name="dia_id" value="{{ dia.pk }}" />
-                                        {% if dia_id_formulario == dia.pk and form_actividad.errors %}
+                                        {% if dia_id_formulario == dia.pk and not actividad_id_edicion and form_actividad.errors %}
                                         <div class="md:col-span-2 rounded-lg bg-error-container p-space-sm text-on-error-container" role="alert">{{ form_actividad.errors }}</div>
                                         {% endif %}
                                         <label class="font-label-sm text-label-sm text-on-surface">Nombre

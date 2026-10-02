@@ -90,8 +90,34 @@ class DiaForm(forms.ModelForm):
             "foto_principal",
         ]
         widgets = {
-            "fecha": forms.DateInput(attrs={"type": "date"}),
-            "descripcion": forms.Textarea(attrs={"rows": 3}),
+            "numero_dia": forms.NumberInput(
+                attrs={
+                    "min": "1",
+                    "class": "mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-lowest",
+                }
+            ),
+            "fecha": forms.DateInput(
+                attrs={
+                    "type": "date",
+                    "class": "mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-lowest",
+                }
+            ),
+            "titulo": forms.TextInput(
+                attrs={
+                    "class": "mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-lowest",
+                }
+            ),
+            "descripcion": forms.Textarea(
+                attrs={
+                    "rows": 3,
+                    "class": "mt-1 w-full px-3 py-2 rounded-lg bg-surface-container-lowest",
+                }
+            ),
+            "ubicacion_gps": forms.TextInput(
+                attrs={
+                    "class": "mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-lowest",
+                }
+            ),
         }
 
 
@@ -108,9 +134,44 @@ class ActividadForm(forms.ModelForm):
             "rating",
         ]
         widgets = {
-            "hora": forms.TimeInput(attrs={"type": "time"}),
+            "nombre": forms.TextInput(
+                attrs={
+                    "class": "mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-lowest",
+                }
+            ),
+            "descripcion": forms.Textarea(
+                attrs={
+                    "rows": 2,
+                    "class": "mt-1 w-full px-3 py-2 rounded-lg bg-surface-container-lowest",
+                }
+            ),
+            "hora": forms.TimeInput(
+                attrs={
+                    "type": "time",
+                    "class": "mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-lowest",
+                }
+            ),
+            "ubicacion": forms.TextInput(
+                attrs={
+                    "class": "mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-lowest",
+                }
+            ),
+            "categoria": forms.TextInput(
+                attrs={
+                    "class": "mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-lowest",
+                }
+            ),
             "costo": forms.NumberInput(
-                attrs={"placeholder": "Costo en pesos chilenos", "step": "1"}
+                attrs={
+                    "placeholder": "Costo en pesos chilenos",
+                    "step": "1",
+                    "class": "mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-lowest",
+                }
+            ),
+            "rating": forms.NumberInput(
+                attrs={
+                    "class": "mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-lowest",
+                }
             ),
         }
 

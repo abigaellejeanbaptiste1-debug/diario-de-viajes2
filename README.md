@@ -39,10 +39,10 @@ HTTPS y cookies seguras.
 ## Acceso y permisos
 
 La lectura del listado y del detalle es pública. Para crear, editar o eliminar
-viajes, y para agregar días, actividades o gastos, inicia sesión con una cuenta
-que tenga el permiso Django correspondiente. `createsuperuser` crea una cuenta
-con acceso completo. Las operaciones de escritura usan POST, CSRF y formularios
-con validación del servidor.
+viajes, días y actividades, inicia sesión con una cuenta que tenga el permiso
+Django correspondiente. `createsuperuser` crea una cuenta con acceso completo.
+El presupuesto gastado se calcula desde los costos de las actividades. Las
+operaciones de escritura usan POST, CSRF y formularios con validación del servidor.
 
 ## Migraciones y pruebas
 

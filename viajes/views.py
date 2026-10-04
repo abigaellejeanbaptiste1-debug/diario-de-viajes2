@@ -1,3 +1,7 @@
+from io import BytesIO
+from pathlib import PurePosixPath
+from zipfile import ZIP_DEFLATED, ZipFile
+
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import permission_required
@@ -5,16 +9,17 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.views import LoginView
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
-from django.db.models import Sum
-from django.http import HttpResponseForbidden
+from django.db.models import Prefetch, Q, Sum
+from django.db.models.functions import Coalesce
+from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils.text import slugify
 
 from .forms import (
-    ActividadForm,
     CompanionForm,
-    DiaForm,
     PhotoForm,
+    RegistroActividadForm,
     ViajeForm,
 )
 from .money import format_clp
@@ -37,8 +42,32 @@ def _render_viajes(request, form=None, editing=False, viaje_en_edicion=None):
             "viajes": page,
             "editing": editing,
             "viaje_en_edicion": viaje_en_edicion,
+            "dias_viaje_en_edicion": (
+                viaje_en_edicion.dias.prefetch_related(
+                    Prefetch(
+                        "actividades",
+                        queryset=Actividad.objects.order_by("hora"),
+                    )
+                ).order_by("numero_dia")
+                if viaje_en_edicion
+                else ()
+            ),
+            "actividades_sin_dia_en_edicion": (
+                viaje_en_edicion.actividades.filter(dia__isnull=True).order_by(
+                    "fecha", "hora", "pk"
+                )
+                if viaje_en_edicion
+                else ()
+            ),
+            "fotos_viaje_en_edicion": (
+                _fotos_viaje(viaje_en_edicion) if viaje_en_edicion else ()
+            ),
+            "presupuesto_gastado_viaje_en_edicion": (
+                format_clp(viaje_en_edicion.presupuesto_gastado)
+                if viaje_en_edicion
+                else None
+            ),
             "cantidad_viajes": Viaje.objects.count(),
-            "dias_registrados": Dia.objects.count(),
             "presupuesto_global_formateado": format_clp(presupuesto_global or 0),
             "cantidad_fotos": Photo.objects.count(),
         },
@@ -51,6 +80,14 @@ def _check_permission(request, permission):
     if not request.user.has_perm(permission):
         raise PermissionDenied("No tienes permiso para realizar esta acción.")
     return None
+
+
+def _fotos_viaje(viaje):
+    return (
+        Photo.objects.filter(Q(viaje=viaje) | Q(dia__viaje=viaje))
+        .select_related("viaje", "dia")
+        .order_by("fecha_subida", "pk")
+    )
 
 
 def lista_viajes(request):
@@ -119,127 +156,100 @@ def eliminar_viaje(request, viaje_id):
     return redirect("lista_viajes")
 
 
+@permission_required("viajes.add_actividad", login_url="login")
+def agregar_actividad(request, viaje_id):
+    viaje = get_object_or_404(Viaje, pk=viaje_id)
+    if not viaje.publico and not request.user.has_perm("viajes.view_viaje"):
+        raise PermissionDenied("No tienes permiso para agregar actividades a este viaje.")
+
+    form = RegistroActividadForm(
+        request.POST or None,
+        viaje=viaje,
+    )
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Actividad registrada correctamente.")
+        return redirect("editar_viaje", viaje_id=viaje.pk)
+
+    return render(
+        request,
+        "viajes/agregar_actividad.html",
+        {
+            "form": form,
+            "viaje": viaje,
+            "presupuesto_gastado": format_clp(viaje.presupuesto_gastado),
+        },
+    )
+
+
+@permission_required("viajes.change_actividad", login_url="login")
+def editar_actividad(request, viaje_id, actividad_id):
+    viaje = get_object_or_404(Viaje, pk=viaje_id)
+    if not viaje.publico and not request.user.has_perm("viajes.view_viaje"):
+        raise PermissionDenied("No tienes permiso para editar actividades de este viaje.")
+    actividad = get_object_or_404(
+        Actividad.objects.filter(viaje=viaje, dia__isnull=True),
+        pk=actividad_id,
+    )
+    form = RegistroActividadForm(
+        request.POST or None,
+        instance=actividad,
+        viaje=viaje,
+    )
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Actividad actualizada correctamente.")
+        return redirect("editar_viaje", viaje_id=viaje.pk)
+
+    return render(
+        request,
+        "viajes/agregar_actividad.html",
+        {
+            "form": form,
+            "viaje": viaje,
+            "actividad": actividad,
+            "presupuesto_gastado": format_clp(viaje.presupuesto_gastado),
+        },
+    )
+
+
+@permission_required("viajes.delete_actividad", login_url="login")
+def eliminar_actividad(request, viaje_id, actividad_id):
+    viaje = get_object_or_404(Viaje, pk=viaje_id)
+    if not viaje.publico and not request.user.has_perm("viajes.view_viaje"):
+        raise PermissionDenied("No tienes permiso para eliminar actividades de este viaje.")
+    if request.method != "POST":
+        return redirect("editar_viaje", viaje_id=viaje.pk)
+
+    actividad = get_object_or_404(
+        Actividad.objects.filter(viaje=viaje, dia__isnull=True),
+        pk=actividad_id,
+    )
+    nombre = actividad.nombre
+    actividad.delete()
+    messages.success(request, f"La actividad «{nombre}» se eliminó correctamente.")
+    return redirect("editar_viaje", viaje_id=viaje.pk)
+
+
 def detalle_viaje(request, viaje_id):
     viaje = get_object_or_404(Viaje, pk=viaje_id)
     if not viaje.publico and not request.user.has_perm("viajes.view_viaje"):
         raise PermissionDenied("No tienes permiso para ver este viaje.")
-    dias = viaje.dias.prefetch_related("actividades").order_by("numero_dia")
-
-    form_dia = DiaForm()
-    form_actividad = ActividadForm()
-    dia_id_formulario = None
-    dia_id_edicion = None
-    actividad_id_edicion = None
-
-    if request.method == "GET":
-        dia_id_edicion = request.GET.get("editar_dia")
-        actividad_id_edicion = request.GET.get("editar_actividad")
-        if dia_id_edicion and request.user.has_perm("viajes.change_dia"):
-            dia_edicion = get_object_or_404(viaje.dias, pk=dia_id_edicion)
-            dia_id_edicion = dia_edicion.pk
-            form_dia = DiaForm(instance=dia_edicion)
-        else:
-            dia_id_edicion = None
-        if actividad_id_edicion and request.user.has_perm(
-            "viajes.change_actividad"
-        ):
-            actividad_edicion = get_object_or_404(
-                Actividad.objects.filter(dia__viaje=viaje), pk=actividad_id_edicion
-            )
-            actividad_id_edicion = actividad_edicion.pk
-            form_actividad = ActividadForm(instance=actividad_edicion)
-            dia_id_formulario = actividad_edicion.dia_id
-        else:
-            actividad_id_edicion = None
-
-    if request.method == "POST":
-        permission_map = {
-            "form_dia": "viajes.add_dia",
-            "form_editar_dia": "viajes.change_dia",
-            "eliminar_dia": "viajes.delete_dia",
-            "form_actividad": "viajes.add_actividad",
-            "form_editar_actividad": "viajes.change_actividad",
-            "eliminar_actividad": "viajes.delete_actividad",
-        }
-        permission = next(
-            (perm for marker, perm in permission_map.items() if marker in request.POST),
-            None,
-        )
-        if permission is None:
-            return HttpResponseForbidden("Acción no permitida.")
-        denied = _check_permission(request, permission)
-        if denied:
-            return denied
-
-    if request.method == "POST" and "form_dia" in request.POST:
-        form_dia = DiaForm(request.POST, request.FILES)
-        if form_dia.is_valid():
-            nuevo_dia = form_dia.save(commit=False)
-            nuevo_dia.viaje = viaje
-            nuevo_dia.save()
-            messages.success(request, "Día registrado correctamente.")
-            return redirect("detalle_viaje", viaje_id=viaje.pk)
-    elif request.method == "POST" and "form_editar_dia" in request.POST:
-        dia = get_object_or_404(viaje.dias, pk=request.POST.get("dia_id"))
-        dia_id_edicion = dia.pk
-        form_dia = DiaForm(request.POST, request.FILES, instance=dia)
-        if form_dia.is_valid():
-            form_dia.save()
-            messages.success(request, "Día actualizado correctamente.")
-            return redirect("detalle_viaje", viaje_id=viaje.pk)
-    elif request.method == "POST" and "eliminar_dia" in request.POST:
-        dia = get_object_or_404(viaje.dias, pk=request.POST.get("dia_id"))
-        numero_dia = dia.numero_dia
-        dia.delete()
-        messages.success(
-            request,
-            f"El día {numero_dia} y sus actividades se eliminaron correctamente.",
-        )
-        return redirect("detalle_viaje", viaje_id=viaje.pk)
-    elif request.method == "POST" and "form_actividad" in request.POST:
-        dia = get_object_or_404(viaje.dias, pk=request.POST.get("dia_id"))
-        dia_id_formulario = dia.pk
-        form_actividad = ActividadForm(request.POST)
-        if form_actividad.is_valid():
-            nueva_actividad = form_actividad.save(commit=False)
-            nueva_actividad.dia = dia
-            nueva_actividad.save()
-            messages.success(request, "Actividad registrada correctamente.")
-            return redirect("detalle_viaje", viaje_id=viaje.pk)
-    elif request.method == "POST" and "form_editar_actividad" in request.POST:
-        actividad = get_object_or_404(
-            Actividad.objects.filter(dia__viaje=viaje),
-            pk=request.POST.get("actividad_id"),
-        )
-        actividad_id_edicion = actividad.pk
-        dia_id_formulario = actividad.dia_id
-        form_actividad = ActividadForm(request.POST, instance=actividad)
-        if form_actividad.is_valid():
-            form_actividad.save()
-            messages.success(request, "Actividad actualizada correctamente.")
-            return redirect("detalle_viaje", viaje_id=viaje.pk)
-    elif request.method == "POST" and "eliminar_actividad" in request.POST:
-        actividad = get_object_or_404(
-            Actividad.objects.filter(dia__viaje=viaje),
-            pk=request.POST.get("actividad_id"),
-        )
-        nombre_actividad = actividad.nombre
-        actividad.delete()
-        messages.success(
-            request,
-            f"La actividad «{nombre_actividad}» se eliminó correctamente.",
-        )
-        return redirect("detalle_viaje", viaje_id=viaje.pk)
+    if request.method != "GET":
+        return HttpResponseForbidden("Esta vista solo permite consultar los detalles.")
 
     gastado = viaje.presupuesto_gastado
     context = {
         "viaje": viaje,
-        "dias": dias,
-        "form_dia": form_dia,
-        "form_actividad": form_actividad,
-        "dia_id_formulario": dia_id_formulario,
-        "dia_id_edicion": dia_id_edicion,
-        "actividad_id_edicion": actividad_id_edicion,
+        "actividades": (
+            Actividad.objects.filter(
+                Q(viaje=viaje) | Q(dia__viaje=viaje)
+            )
+            .select_related("dia")
+            .annotate(fecha_actividad=Coalesce("fecha", "dia__fecha"))
+            .order_by("fecha_actividad", "hora", "pk")
+        ),
+        "fotos_viaje": _fotos_viaje(viaje),
         "presupuesto_total": viaje.presupuesto,
         "presupuesto_gastado": gastado,
         "presupuesto_disponible": viaje.presupuesto - gastado,
@@ -247,7 +257,7 @@ def detalle_viaje(request, viaje_id):
         "presupuesto_gastado_formateado": format_clp(gastado),
         "presupuesto_disponible_formateado": format_clp(viaje.presupuesto - gastado),
     }
-    return render(request, "viajes/lista_viajes.html", context)
+    return render(request, "viajes/ver_detalle_viaje.html", context)
 
 
 @permission_required("viajes.add_companion", login_url="login")
@@ -269,19 +279,97 @@ def agregar_companion(request, viaje_id):
 
 
 @permission_required("viajes.add_photo", login_url="login")
-def agregar_photo(request, dia_id):
-    dia = get_object_or_404(Dia, pk=dia_id)
+def agregar_foto_viaje(request, viaje_id):
+    viaje = get_object_or_404(Viaje, pk=viaje_id)
+    if not viaje.publico and not request.user.has_perm("viajes.view_viaje"):
+        raise PermissionDenied("No tienes permiso para agregar fotos a este viaje.")
+
     if request.method == "POST":
         form = PhotoForm(request.POST, request.FILES)
         if form.is_valid():
-            photo = form.save(commit=False)
-            photo.dia = dia
-            photo.save()
+            foto = form.save(commit=False)
+            foto.viaje = viaje
+            foto.dia = None
+            foto.save()
             messages.success(request, "Foto agregada correctamente.")
-            return redirect("detalle_viaje", viaje_id=dia.viaje_id)
+            return redirect("editar_viaje", viaje_id=viaje.pk)
     else:
         form = PhotoForm()
-    return render(request, "viajes/agregar_photo.html", {"form": form, "dia": dia})
+
+    return render(
+        request,
+        "viajes/agregar_foto_viaje.html",
+        {"form": form, "viaje": viaje},
+    )
+
+
+@permission_required("viajes.change_photo", login_url="login")
+def editar_foto_viaje(request, viaje_id, foto_id):
+    viaje = get_object_or_404(Viaje, pk=viaje_id)
+    if not viaje.publico and not request.user.has_perm("viajes.view_viaje"):
+        raise PermissionDenied("No tienes permiso para editar fotos de este viaje.")
+    foto = get_object_or_404(
+        Photo.objects.filter(Q(viaje=viaje) | Q(dia__viaje=viaje)),
+        pk=foto_id,
+    )
+    form = PhotoForm(request.POST or None, request.FILES or None, instance=foto)
+    if request.method == "POST" and form.is_valid():
+        imagen_anterior = foto.imagen
+        foto = form.save()
+        if imagen_anterior and imagen_anterior.name != foto.imagen.name:
+            imagen_anterior.delete(save=False)
+        messages.success(request, "Foto actualizada correctamente.")
+        return redirect("editar_viaje", viaje_id=viaje.pk)
+
+    return render(
+        request,
+        "viajes/agregar_foto_viaje.html",
+        {"form": form, "viaje": viaje, "foto": foto},
+    )
+
+
+@permission_required("viajes.delete_photo", login_url="login")
+def eliminar_foto_viaje(request, viaje_id, foto_id):
+    viaje = get_object_or_404(Viaje, pk=viaje_id)
+    if not viaje.publico and not request.user.has_perm("viajes.view_viaje"):
+        raise PermissionDenied("No tienes permiso para eliminar fotos de este viaje.")
+    if request.method != "POST":
+        return redirect("editar_viaje", viaje_id=viaje.pk)
+
+    foto = get_object_or_404(
+        Photo.objects.filter(Q(viaje=viaje) | Q(dia__viaje=viaje)),
+        pk=foto_id,
+    )
+    imagen = foto.imagen
+    foto.delete()
+    if imagen:
+        imagen.delete(save=False)
+    messages.success(request, "Foto eliminada correctamente.")
+    return redirect("editar_viaje", viaje_id=viaje.pk)
+
+
+def descargar_fotos_viaje(request, viaje_id):
+    viaje = get_object_or_404(Viaje, pk=viaje_id)
+    if not viaje.publico and not request.user.has_perm("viajes.view_viaje"):
+        raise PermissionDenied("No tienes permiso para descargar fotos de este viaje.")
+    if request.method != "GET":
+        return HttpResponseForbidden("La descarga solo permite solicitudes GET.")
+
+    fotos = _fotos_viaje(viaje)
+    archivo_zip = BytesIO()
+    with ZipFile(archivo_zip, "w", compression=ZIP_DEFLATED) as zip_file:
+        for index, foto in enumerate(fotos, start=1):
+            nombre_archivo = PurePosixPath(foto.imagen.name).name
+            ruta_en_zip = f"{index:03d}_{nombre_archivo}"
+            with foto.imagen.open("rb") as imagen:
+                zip_file.writestr(ruta_en_zip, imagen.read())
+
+    nombre_viaje = slugify(viaje.titulo) or f"viaje-{viaje.pk}"
+    response = HttpResponse(archivo_zip.getvalue(), content_type="application/zip")
+    response["Content-Disposition"] = (
+        f'attachment; filename="{nombre_viaje}-fotos.zip"'
+    )
+    return response
 
 
 class ViajesLoginView(LoginView):

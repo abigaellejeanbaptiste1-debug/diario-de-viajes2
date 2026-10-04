@@ -1,0 +1,60 @@
+<section class="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm" aria-labelledby="fotos-viaje-title">
+    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <p class="text-sm font-semibold uppercase tracking-wider text-blue-700">Recuerdos del viaje</p>
+            <h2 class="mt-1 text-2xl font-bold text-slate-900" id="fotos-viaje-title">Imágenes agregadas</h2>
+        </div>
+        {% if not editing and fotos_viaje %}
+        <div class="flex flex-wrap gap-2">
+        {% endif %}
+        {% if editing and perms.viajes.add_photo %}
+        <a class="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-800" href="{% url 'agregar_foto_viaje' viaje.pk %}">
+            <span class="material-symbols-outlined text-lg">add_a_photo</span>
+            Agregar foto
+        </a>
+        {% endif %}
+        {% if not editing and fotos_viaje %}
+        <a class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50" href="{% url 'descargar_fotos_viaje' viaje.pk %}">
+            <span class="material-symbols-outlined text-lg">download</span>
+            Descargar todas (.zip)
+        </a>
+        </div>
+        {% endif %}
+    </div>
+    {% if fotos_viaje %}
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {% for foto in fotos_viaje %}
+        <figure class="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+            <img class="h-56 w-full object-cover" src="{{ foto.imagen.url }}" alt="{% if foto.descripcion %}{{ foto.descripcion }}{% elif foto.dia %}{{ foto.dia.titulo }}{% else %}Foto del viaje{% endif %}" loading="lazy" />
+            <figcaption class="p-3">
+                {% if foto.dia %}
+                <time class="text-sm text-slate-600" datetime="{{ foto.dia.fecha|date:'Y-m-d' }}">{{ foto.dia.fecha|date:"d M Y" }}</time>
+                {% else %}
+                <time class="text-sm text-slate-600" datetime="{{ foto.fecha_subida|date:'Y-m-d' }}">{{ foto.fecha_subida|date:"d M Y" }}</time>
+                {% endif %}
+                {% if foto.descripcion %}
+                <p class="mt-1 text-sm text-slate-600">{{ foto.descripcion }}</p>
+                {% endif %}
+                {% if editing %}
+                {% if perms.viajes.change_photo or perms.viajes.delete_photo %}
+                <div class="mt-3 flex flex-wrap gap-2 border-t border-slate-200 pt-3">
+                    {% if perms.viajes.change_photo %}
+                    <a class="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200" href="{% url 'editar_foto_viaje' viaje.pk foto.pk %}">Editar</a>
+                    {% endif %}
+                    {% if perms.viajes.delete_photo %}
+                    <form action="{% url 'eliminar_foto_viaje' viaje.pk foto.pk %}" method="post" onsubmit="return confirm('¿Eliminar esta foto del viaje?');">
+                        {% csrf_token %}
+                        <button class="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100" type="submit">Eliminar</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% endif %}
+            </figcaption>
+        </figure>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="rounded-lg bg-slate-50 p-4 text-sm text-slate-600">Todavía no hay imágenes agregadas a este viaje.</p>
+    {% endif %}
+</section>

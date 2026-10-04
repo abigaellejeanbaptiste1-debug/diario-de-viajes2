@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 
+{% load static %}
 <html lang="es">
 
 <head>
@@ -69,14 +70,10 @@
     <header
         class="fixed top-0 left-0 right-0 z-50 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(10,37,64,0.04)]">
         <div class="h-16 w-full px-margin md:px-margin-tablet lg:px-margin-desktop flex items-center justify-between">
-            <div class="flex items-center gap-space-md"><img alt="Brand logo. - Primary color: #0a2540
-- Font: plusJakartaSans
-- Mode: light
-- Roundness: rounded-md
-" class="h-8 w-auto object-contain"
-                    src="https://lh3.googleusercontent.com/aida/AEtjO1WeZHjAb9cNlibm--puhPsAgXm6qiDSZtya18unmPX7e_7QR_gncyeTJV5OtZGAJwEijxVECECXXDf9_3K5m3nwwGwifrC_fftN5MB0WqvfJFgDCJG6njSzZVzVG5x_WNHSF9A1MesYWK5DXseDdT6aG7S6Alj9xBEvnlRkJsAeGS0UyhVUDp3sc8yzXHcOZH70VwJfgggxSgAqCvAsqrkOdZ5zJWyiShqCP4_jWIjDPGwzLHZ3SQn3" /><span
-                    class="font-headline-sm text-headline-sm text-primary-container tracking-tight">Diario de
-                    Viajes</span></div>
+            <div class="flex items-center gap-space-md">
+                <img alt="Logo de Diario de Viajes" class="h-8 w-auto object-contain rounded-md" src="{% static 'viajes/logo.svg' %}" />
+                <span class="font-headline-sm text-headline-sm text-primary-container tracking-tight">Diario de Viajes</span>
+            </div>
             <nav class="hidden md:flex items-center gap-space-xs"
                 data-active-classes="bg-primary-container text-on-primary font-label-lg text-label-lg rounded-lg"><a
                     aria-current="page"
@@ -95,19 +92,26 @@
                         class="material-symbols-outlined">notifications</span></button>
                 {% if user.is_authenticated %}
                 <form action="{% url 'logout' %}" method="post">{% csrf_token %}<button class="font-label-sm text-label-sm text-secondary" type="submit">Salir</button></form>
+                <div class="flex items-center gap-space-xs pl-space-xs">
+                    <div aria-label="Usuario {{ user.get_full_name|default:user.username }}"
+                        class="flex h-8 w-8 items-center justify-center rounded-full bg-primary-container text-[0.625rem] font-bold text-on-primary ring-2 ring-secondary/20">
+                        {{ user.get_full_name|default:user.username|slice:":2"|upper }}
+                    </div>
+                </div>
                 {% else %}
                 <a class="font-label-sm text-label-sm text-secondary" href="{% url 'login' %}">Ingresar</a>
-                {% endif %}
                 <div class="flex items-center gap-space-xs pl-space-xs"><img alt="Profile"
                         class="w-8 h-8 rounded-full object-cover ring-2 ring-secondary/20"
                         src="https://lh3.googleusercontent.com/aida/AEtjO1VnPEilozY1Iw8aFOwCGrDx9pgK0ieazkT9H1l0emx5AD48VmpPnDvL72zPaV-86cctBk6IbJMz6uzLMzY44lBvpzkdlab1eKqOvMWwOx9Xfr8_z1LN7CCHh5vxlu2V16-X40s5pp7uJOaIAq3YYWo6LMiMIoIyizXeDxO7gEWNXCdODgeHeZ87DaQSdmKnpNpzudKcfAEGDFxGmHoOgtUtjUo59oa_YGLDPxkz8oxbpJZaASBePVbf" />
                 </div>
+                {% endif %}
             </div>
         </div>
     </header>
     <main class="w-full pt-16 bg-surface min-h-screen">
         <div class="flex flex-col w-full">
-            <div class="w-full px-margin md:px-margin-tablet lg:px-margin-desktop py-space-xl">
+            <div class="w-full px-margin md:px-margin-tablet lg:px-margin-desktop {% if editing %}py-space-lg{% else %}py-space-xl{% endif %}">
+                {% if not editing %}
                 <div class="relative mb-space-xl flex flex-col items-center text-center">
                     <div
                         class="inline-flex items-center gap-space-xs px-space-md py-space-xs rounded-full bg-secondary/10 text-secondary mb-space-sm">
@@ -124,7 +128,7 @@
                         Registra nuevas aventuras y explora tus bitácoras de viaje con un registro detallado de
                         itinerarios y presupuestos.
                     </p>
-                    <div class="w-full max-w-5xl mt-space-lg grid grid-cols-2 md:grid-cols-4 gap-space-sm">
+                    <div class="w-full max-w-5xl mt-space-lg grid grid-cols-1 sm:grid-cols-3 gap-space-sm">
                         <div
                             class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex items-center gap-space-sm">
                             <div
@@ -135,18 +139,6 @@
                                 <span
                                     class="font-label-sm text-label-sm text-on-surface-variant block uppercase">Destinos</span>
                                 <span class="font-headline-sm text-headline-sm text-primary">{{ cantidad_viajes }} Registrados</span>
-                            </div>
-                        </div>
-                        <div
-                            class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex items-center gap-space-sm">
-                            <div
-                                class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-secondary">
-                                <span class="material-symbols-outlined">calendar_month</span>
-                            </div>
-                            <div class="text-left">
-                                <span class="font-label-sm text-label-sm text-on-surface-variant block uppercase">Días
-                                    en Ruta</span>
-                                <span class="font-headline-sm text-headline-sm text-primary">{{ dias_registrados }} Días</span>
                             </div>
                         </div>
                         <div
@@ -176,6 +168,7 @@
                         </div>
                     </div>
                 </div>
+                {% endif %}
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
                     {% if perms.viajes.add_viaje or editing %}
                     <section
@@ -333,7 +326,8 @@
                         </div>
                     </section>
                     {% endif %}
-                    <section class="{% if perms.viajes.add_viaje or editing %}lg:col-span-7{% else %}lg:col-span-12{% endif %} flex flex-col gap-space-md">
+                    {% if not editing %}
+                    <section class="{% if perms.viajes.add_viaje %}lg:col-span-7{% else %}lg:col-span-12{% endif %} flex flex-col gap-space-md">
                         <div
                             class="bg-surface-container-lowest rounded-xl shadow-md p-space-md flex items-center justify-between flex-wrap gap-space-sm">
                             <div class="flex items-center gap-space-sm">
@@ -385,22 +379,29 @@
                                     </div>
                                     <div class="flex items-center justify-between pt-space-xs bg-surface-container-low/40 -mx-space-md -mb-space-md p-space-md">
                                         <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">{{ viaje.ciudad }}, {{ viaje.pais }}</span>
-                                        <div class="flex items-center gap-space-sm">
-                                            {% if perms.viajes.change_viaje %}<a class="font-label-md text-label-md text-secondary hover:text-primary"
-                                                href="{% url 'editar_viaje' viaje.pk %}">Editar</a>
+                                        <div class="flex flex-wrap items-center justify-end gap-space-xs">
+                                            {% if perms.viajes.change_viaje %}
+                                            <a class="inline-flex items-center gap-1 rounded-lg bg-surface-container px-space-sm py-1.5 font-label-md text-label-md text-secondary shadow-sm transition hover:bg-surface-container-high hover:text-primary"
+                                                href="{% url 'editar_viaje' viaje.pk %}">
+                                                <span class="material-symbols-outlined text-[1rem]">edit</span>
+                                                <span>Editar</span>
+                                            </a>
                                             {% endif %}
                                             {% if perms.viajes.delete_viaje %}
                                             <form action="{% url 'eliminar_viaje' viaje.pk %}" method="POST"
                                                 onsubmit="return confirm('¿Eliminar este viaje y sus días, actividades y gastos?');">
                                                 {% csrf_token %}
-                                                <button class="font-label-md text-label-md text-error hover:underline"
-                                                    type="submit">Eliminar</button>
+                                                <button class="inline-flex items-center gap-1 rounded-lg bg-error-container px-space-sm py-1.5 font-label-md text-label-md text-on-error-container shadow-sm transition hover:opacity-90"
+                                                    type="submit">
+                                                    <span class="material-symbols-outlined text-[1rem]">delete</span>
+                                                    <span>Eliminar</span>
+                                                </button>
                                             </form>
                                             {% endif %}
-                                            <a class="font-label-lg text-label-lg text-secondary hover:text-primary transition-colors flex items-center gap-1"
+                                            <a class="inline-flex items-center gap-1 rounded-lg bg-primary-container px-space-sm py-1.5 font-label-md text-label-md text-on-primary shadow-sm transition hover:bg-secondary"
                                                 href="{% url 'detalle_viaje' viaje.pk %}">
-                                                <span>Ver Detalle</span>
-                                                <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                                                <span>Ver detalle</span>
+                                                <span class="material-symbols-outlined text-[1rem]">arrow_forward</span>
                                             </a>
                                         </div>
                                     </div>
@@ -600,7 +601,99 @@
                             <span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Usa el formulario para crear tu primer viaje.</span>
                         </div>
                     </section>
+                    {% endif %}
                 </div>
+                {% if editing %}
+                <section class="mt-space-lg rounded-xl bg-surface-container-lowest p-space-lg shadow-sm">
+                    <div class="mb-space-md flex flex-col gap-space-sm sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <span class="font-label-sm text-label-sm uppercase tracking-wider text-secondary">Itinerario</span>
+                            <h2 class="font-headline-md text-headline-md text-primary">Actividades del viaje</h2>
+                            <p class="font-body-sm text-body-sm text-on-surface-variant">Consulta las actividades por fecha y hora, y continúa agregando las que realizaste.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-space-sm">
+                            <span class="rounded-lg bg-secondary-fixed/50 px-space-md py-space-sm font-label-md text-label-md text-on-secondary-fixed">
+                                Total gastado: {{ presupuesto_gastado_viaje_en_edicion }} CLP
+                            </span>
+                            <a class="inline-flex items-center gap-1 rounded-lg bg-primary-container px-space-md py-space-sm font-label-md text-label-md text-on-primary transition hover:bg-secondary"
+                                href="{% url 'agregar_actividad' viaje_en_edicion.pk %}">
+                                <span class="material-symbols-outlined text-[1.125rem]">add_circle</span>
+                                <span>Agregar actividades</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    {% for dia in dias_viaje_en_edicion %}
+                    <article class="mb-space-md last:mb-0 rounded-xl border border-surface-container-highest bg-surface-container-low p-space-md">
+                        <div class="mb-space-sm flex flex-wrap items-center justify-between gap-space-sm">
+                            <div>
+                                <span class="font-label-sm text-label-sm uppercase tracking-wider text-secondary">Día {{ dia.numero_dia }} · <time datetime="{{ dia.fecha|date:'Y-m-d' }}">{{ dia.fecha|date:"d M Y" }}</time></span>
+                                <h3 class="font-headline-sm text-headline-sm text-primary">{{ dia.titulo }}</h3>
+                            </div>
+                            <span class="rounded-full bg-surface-container-lowest px-space-sm py-1 font-label-md text-label-md text-primary">
+                                Total del día: {{ dia.gastos_totales_formateados }} CLP
+                            </span>
+                        </div>
+                        {% for actividad in dia.actividades.all %}
+                        <div class="mb-space-xs last:mb-0 flex flex-col gap-space-xs rounded-lg bg-surface-container-lowest p-space-sm sm:flex-row sm:items-start sm:justify-between">
+                            <div class="flex items-start gap-space-sm">
+                                <span class="rounded-md bg-secondary/10 px-space-sm py-1 font-label-md text-label-md text-secondary">
+                                    <time datetime="{{ actividad.hora|time:'H:i' }}">{{ actividad.hora|time:"H:i" }}</time>
+                                </span>
+                                <div>
+                                    <h4 class="font-label-md text-label-md text-primary">{{ actividad.nombre }}</h4>
+                                    {% if actividad.categoria %}<p class="font-body-sm text-body-sm text-on-surface-variant">{{ actividad.categoria }}</p>{% endif %}
+                                    {% if actividad.ubicacion %}<p class="font-body-sm text-body-sm text-on-surface-variant">{{ actividad.ubicacion }}</p>{% endif %}
+                                    {% if actividad.descripcion %}<p class="mt-1 font-body-sm text-body-sm text-on-surface-variant">{{ actividad.descripcion }}</p>{% endif %}
+                                </div>
+                            </div>
+                            <span class="shrink-0 font-label-md text-label-md text-primary">{{ actividad.costo_formateado }} CLP</span>
+                        </div>
+                        {% empty %}
+                        <p class="rounded-lg bg-surface-container-lowest px-space-md py-space-sm font-body-sm text-body-sm text-on-surface-variant">Aún no hay actividades para este día.</p>
+                        {% endfor %}
+                    </article>
+                    {% empty %}
+                    <div class="rounded-lg bg-surface-container-low p-space-md text-center">
+                        <p class="font-body-md text-body-md text-on-surface-variant">Este viaje todavía no tiene días registrados. Puedes agregar actividades sin crear un día.</p>
+                    </div>
+                    {% endfor %}
+
+                    {% if actividades_sin_dia_en_edicion %}
+                    <div class="mt-space-md rounded-xl border border-surface-container-highest bg-surface-container-low p-space-md">
+                        <h3 class="mb-space-sm font-label-lg text-label-lg text-primary">Actividades independientes</h3>
+                        {% for actividad in actividades_sin_dia_en_edicion %}
+                        <div class="mb-space-xs last:mb-0 flex flex-wrap items-center justify-between gap-space-sm rounded-lg bg-surface-container-lowest p-space-sm">
+                            <div>
+                                <h4 class="font-label-md text-label-md text-primary">{{ actividad.nombre }}</h4>
+                                <time class="font-body-sm text-body-sm text-on-surface-variant" datetime="{{ actividad.fecha|date:'Y-m-d' }}">{{ actividad.fecha|date:"d M Y" }}</time>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-space-xs">
+                                <span class="font-label-md text-label-md text-primary">{{ actividad.costo_formateado }} CLP</span>
+                                {% if perms.viajes.change_actividad %}
+                                <a class="inline-flex items-center gap-1 rounded-lg bg-surface-container px-space-sm py-1 font-label-sm text-label-sm text-secondary hover:bg-surface-container-high"
+                                    href="{% url 'editar_actividad' viaje_en_edicion.pk actividad.pk %}">
+                                    <span class="material-symbols-outlined text-sm">edit</span>Editar
+                                </a>
+                                {% endif %}
+                                {% if perms.viajes.delete_actividad %}
+                                <form action="{% url 'eliminar_actividad' viaje_en_edicion.pk actividad.pk %}" method="post"
+                                    onsubmit="return confirm('¿Eliminar esta actividad? El gasto se descontará del total.');">
+                                    {% csrf_token %}
+                                    <button class="inline-flex items-center gap-1 rounded-lg bg-error-container px-space-sm py-1 font-label-sm text-label-sm text-on-error-container hover:opacity-90"
+                                        type="submit">
+                                        <span class="material-symbols-outlined text-sm">delete</span>Eliminar
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </section>
+                {% include "viajes/galeria_fotos.html" with viaje=viaje_en_edicion fotos_viaje=fotos_viaje_en_edicion %}
+                {% endif %}
             </div>
             <script>
                 const textarea = document.getElementById('id_descripcion');
@@ -616,11 +709,10 @@
     <footer class="w-full bg-surface-container-lowest shadow-[0_-1px_8px_rgba(10,37,64,0.03)] py-space-xl">
         <div
             class="w-full px-margin md:px-margin-tablet lg:px-margin-desktop flex flex-col md:flex-row items-center justify-between gap-space-md">
-            <div class="flex items-center gap-space-sm"><img alt="Diario de Viajes Logo"
-                    class="h-6 w-auto object-contain"
-                    src="https://lh3.googleusercontent.com/aida/AEtjO1WeZHjAb9cNlibm--puhPsAgXm6qiDSZtya18unmPX7e_7QR_gncyeTJV5OtZGAJwEijxVECECXXDf9_3K5m3nwwGwifrC_fftN5MB0WqvfJFgDCJG6njSzZVzVG5x_WNHSF9A1MesYWK5DXseDdT6aG7S6Alj9xBEvnlRkJsAeGS0UyhVUDp3sc8yzXHcOZH70VwJfgggxSgAqCvAsqrkOdZ5zJWyiShqCP4_jWIjDPGwzLHZ3SQn3" /><span
-                    class="font-label-md text-label-md text-on-surface-variant">© 2024 Diario de Viajes. Cuaderno de
-                    bitácora y memorias.</span></div>
+            <div class="flex items-center gap-space-sm">
+                <img alt="Diario de Viajes Logo" class="h-6 w-auto object-contain rounded-md" src="{% static 'viajes/logo.svg' %}" />
+                <span class="font-label-md text-label-md text-on-surface-variant">© 2024 Diario de Viajes. Cuaderno de bitácora y memorias.</span>
+            </div>
             <div class="flex items-center gap-space-lg"><a
                     class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors"
                     href="#">Privacidad</a><a

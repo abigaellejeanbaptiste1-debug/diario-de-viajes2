@@ -79,6 +79,29 @@ class GastoForm(forms.ModelForm):
 
 
 class DiaForm(forms.ModelForm):
+    actividad_nombre = forms.CharField(
+        required=False,
+        max_length=200,
+        label="Título de la actividad",
+        widget=forms.TextInput(
+            attrs={
+                "class": "mt-1 w-full h-10 px-3 rounded-lg bg-surface-container-lowest",
+                "placeholder": "Ej. Visita al museo",
+            }
+        ),
+    )
+    actividad_descripcion = forms.CharField(
+        required=False,
+        label="Descripción de la actividad",
+        widget=forms.Textarea(
+            attrs={
+                "rows": 2,
+                "class": "mt-1 w-full px-3 py-2 rounded-lg bg-surface-container-lowest",
+                "placeholder": "¿Qué hiciste?",
+            }
+        ),
+    )
+
     class Meta:
         model = Dia
         fields = [
@@ -119,6 +142,17 @@ class DiaForm(forms.ModelForm):
                 }
             ),
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get("actividad_descripcion") and not cleaned_data.get(
+            "actividad_nombre"
+        ):
+            self.add_error(
+                "actividad_nombre",
+                "Escribe un título para poder guardar la descripción de la actividad.",
+            )
+        return cleaned_data
 
 
 class ActividadForm(forms.ModelForm):
@@ -182,6 +216,62 @@ class ActividadForm(forms.ModelForm):
         return costo
 
 
+class RegistroActividadForm(forms.ModelForm):
+    fecha = forms.DateField(
+        label="Fecha",
+        widget=forms.DateInput(
+            attrs={
+                "type": "date",
+                "class": "mt-1 w-full h-12 rounded-lg bg-surface-container-low px-space-md text-on-surface"
+            }
+        ),
+    )
+
+    class Meta:
+        model = Actividad
+        fields = ["nombre", "costo"]
+        labels = {
+            "nombre": "Actividad",
+            "costo": "Monto gastado (CLP)",
+        }
+        widgets = {
+            "nombre": forms.TextInput(
+                attrs={
+                    "class": "mt-1 w-full h-12 rounded-lg bg-surface-container-low px-space-md text-on-surface",
+                    "placeholder": "¿Qué actividad realizaste?",
+                }
+            ),
+            "costo": forms.NumberInput(
+                attrs={
+                    "class": "mt-1 w-full h-12 rounded-lg bg-surface-container-low px-space-md text-on-surface",
+                    "min": "0",
+                    "step": "1",
+                    "placeholder": "0",
+                }
+            ),
+        }
+
+    def __init__(self, *args, viaje, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._viaje = viaje
+        self.fields["costo"].required = False
+        self.fields["costo"].initial = 0
+
+    def clean_costo(self):
+        costo = self.cleaned_data.get("costo")
+        if costo is None:
+            return 0
+        if costo < 0:
+            raise ValidationError("El monto gastado no puede ser negativo.")
+        return costo
+
+    def save(self, commit=True):
+        self.instance.viaje = self._viaje
+        self.instance.fecha = self.cleaned_data["fecha"]
+        self.instance.dia = None
+        return super().save(commit=commit)
+
+
 class CompanionForm(forms.ModelForm):
     class Meta:
         model = Companion
@@ -213,10 +303,11 @@ class PhotoForm(forms.ModelForm):
         model = Photo
         fields = ["imagen", "descripcion"]
         widgets = {
-            "imagen": forms.ClearableFileInput(attrs={"class": "form-control"}),
-            "descripcion": forms.TextInput(
+            "imagen": forms.ClearableFileInput(attrs={"class": "hidden"}),
+            "descripcion": forms.Textarea(
                 attrs={
-                    "class": "form-control",
+                    "class": "w-full rounded-lg border border-outline/40 bg-surface-container-low px-space-md py-space-sm font-body-md text-on-surface placeholder:text-outline focus:border-secondary focus:outline-none focus:ring-2 focus:ring-secondary/20",
+                    "rows": 4,
                     "placeholder": "Breve descripción de la foto (opcional)",
                 }
             ),

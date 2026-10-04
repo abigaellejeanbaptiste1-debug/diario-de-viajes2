@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.db.models import Q
 
 from .money import format_clp
 
@@ -26,10 +27,9 @@ class Viaje(models.Model):
 
     @property
     def presupuesto_gastado(self):
-        total = self.dias.aggregate(models.Sum("actividades__costo"))[
-            "actividades__costo__sum"
-        ]
-        return total if total is not None else Decimal("0.00")
+        return Actividad.objects.filter(
+            Q(viaje=self, dia__isnull=True) | Q(dia__viaje=self)
+        ).aggregate(total=models.Sum("costo"))["total"] or Decimal("0.00")
 
     @property
     def presupuesto_formateado(self):
@@ -61,10 +61,24 @@ class Dia(models.Model):
 
 
 class Actividad(models.Model):
-    dia = models.ForeignKey(Dia, on_delete=models.CASCADE, related_name="actividades")
+    viaje = models.ForeignKey(
+        Viaje,
+        on_delete=models.CASCADE,
+        related_name="actividades",
+        blank=True,
+        null=True,
+    )
+    fecha = models.DateField(blank=True, null=True)
+    dia = models.ForeignKey(
+        Dia,
+        on_delete=models.CASCADE,
+        related_name="actividades",
+        blank=True,
+        null=True,
+    )
     nombre = models.CharField(max_length=200)
     descripcion = models.TextField(blank=True, null=True)
-    hora = models.TimeField()
+    hora = models.TimeField(blank=True, null=True)
     ubicacion = models.CharField(max_length=200, blank=True, null=True)
     categoria = models.CharField(max_length=100, blank=True, null=True)
     costo = models.DecimalField(
@@ -76,6 +90,10 @@ class Actividad(models.Model):
     rating = models.IntegerField(blank=True, null=True)
 
     def __str__(self):
+        if self.viaje_id:
+            return f"{self.nombre} - {self.viaje.titulo}"
+        if self.dia_id:
+            return f"{self.nombre} - {self.dia.viaje.titulo}"
         return self.nombre
 
     @property
@@ -125,10 +143,25 @@ class Companion(models.Model):
 
 
 class Photo(models.Model):
-    dia = models.ForeignKey(Dia, on_delete=models.CASCADE, related_name="fotos")
+    viaje = models.ForeignKey(
+        Viaje,
+        on_delete=models.CASCADE,
+        related_name="fotos",
+        blank=True,
+        null=True,
+    )
+    dia = models.ForeignKey(
+        Dia,
+        on_delete=models.CASCADE,
+        related_name="fotos",
+        blank=True,
+        null=True,
+    )
     imagen = models.ImageField(upload_to="viajes/fotos/")
     descripcion = models.CharField(max_length=255, blank=True, null=True)
     fecha_subida = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
+        if self.viaje_id:
+            return f"Foto de {self.viaje.titulo}"
         return f"Foto de {self.dia.viaje.titulo} - Día {self.dia.numero_dia}"

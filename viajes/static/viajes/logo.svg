@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Diario de Viajes logo">
+  <defs>
+    <linearGradient id="bg" x1="0%" x2="100%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#0a2540"/>
+      <stop offset="100%" stop-color="#1f4d7a"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" x2="100%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#8fd3ff"/>
+      <stop offset="100%" stop-color="#d7f0ff"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#bg)"/>
+  <path d="M24 18h9.5c8.3 0 15 6.1 15 14s-6.7 14-15 14H24V18zm8.5 8.5H28v11h4.5c3.9 0 6.5-2.3 6.5-5.5s-2.6-5.5-6.5-5.5z" fill="url(#accent)"/>
+  <path d="M19 20c4.5 0 8.5 3.8 8.5 8.5S23.5 37 19 37c-2.7 0-5.1-1.4-6.6-3.6l3.3-2.4c.8 1 1.9 1.6 3.3 1.6 2.2 0 4-1.7 4-3.8 0-2.1-1.8-3.8-4-3.8-1.4 0-2.5.6-3.3 1.6L12.4 23.6c1.5-2.2 3.9-3.6 6.6-3.6z" fill="#ffffff" opacity="0.9"/>
+</svg>

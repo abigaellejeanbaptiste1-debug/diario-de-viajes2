@@ -7,6 +7,13 @@ urlpatterns = [
     path('', views.lista_viajes, name='lista_viajes'),
     path('viaje/<int:viaje_id>/', views.detalle_viaje, name='detalle_viaje'),
     path('viaje/<int:viaje_id>/editar/', views.editar_viaje, name='editar_viaje'),
+    path('viaje/<int:viaje_id>/actividades/nueva/', views.agregar_actividad, name='agregar_actividad'),
+    path('viaje/<int:viaje_id>/actividades/<int:actividad_id>/editar/', views.editar_actividad, name='editar_actividad'),
+    path('viaje/<int:viaje_id>/actividades/<int:actividad_id>/eliminar/', views.eliminar_actividad, name='eliminar_actividad'),
+    path('viaje/<int:viaje_id>/fotos/nueva/', views.agregar_foto_viaje, name='agregar_foto_viaje'),
+    path('viaje/<int:viaje_id>/fotos/<int:foto_id>/editar/', views.editar_foto_viaje, name='editar_foto_viaje'),
+    path('viaje/<int:viaje_id>/fotos/<int:foto_id>/eliminar/', views.eliminar_foto_viaje, name='eliminar_foto_viaje'),
+    path('viaje/<int:viaje_id>/fotos/descargar/', views.descargar_fotos_viaje, name='descargar_fotos_viaje'),
     path('viaje/<int:viaje_id>/eliminar/', views.eliminar_viaje, name='eliminar_viaje'),
 
     # Ruta para agregar un acompañante a un viaje específico
@@ -14,12 +21,6 @@ urlpatterns = [
         'viaje/<int:viaje_id>/companion/nuevo/',
         views.agregar_companion,
         name='agregar_companion',
-    ),
-    # Ruta para subir una foto a un día específico del itinerario
-    path(
-        'dia/<int:dia_id>/foto/nueva/',
-        views.agregar_photo,
-        name='agregar_photo',
     ),
 ]
 

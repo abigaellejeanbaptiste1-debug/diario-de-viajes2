@@ -63,6 +63,4 @@ python manage.py makemigrations --check --dry-run
 ## Git y publicación
 
 El repositorio incluye `.gitignore` para entornos virtuales, cachés de Python,
-base de datos local y variables de entorno. Para publicar el proyecto, agrega un
-remoto GitHub, revisa los cambios antes de cada commit y no subas claves,
-contraseñas ni la base de datos local.
+base de datos local y variables de entorno.

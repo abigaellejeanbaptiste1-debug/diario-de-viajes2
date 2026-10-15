@@ -5,6 +5,7 @@ urlpatterns = [
     path('cuenta/ingresar/', views.ViajesLoginView.as_view(), name='login'),
     path('cuenta/salir/', views.cerrar_sesion, name='logout'),
     path('', views.lista_viajes, name='lista_viajes'),
+    path('gastos/', views.lista_gastos, name='lista_gastos'),
     path('viaje/<int:viaje_id>/', views.detalle_viaje, name='detalle_viaje'),
     path('viaje/<int:viaje_id>/editar/', views.editar_viaje, name='editar_viaje'),
     path('viaje/<int:viaje_id>/actividades/nueva/', views.agregar_actividad, name='agregar_actividad'),

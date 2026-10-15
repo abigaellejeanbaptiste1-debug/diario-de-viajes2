@@ -1,0 +1,208 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Gastos · Diario de Viajes</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Plus+Jakarta+Sans:wght@100..900&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: "class", theme: { extend: { colors: { "surface-container-lowest": "#ffffff", "surface-container": "#eaeef3", "primary-container": "#0a2540", "surface": "#f6faff", "surface-container-low": "#f0f4f9", "outline": "#74777e", "on-surface-variant": "#43474d", "secondary": "#0051d5", "secondary-fixed": "#dbe1ff", "on-secondary-fixed": "#00174b", "on-primary": "#ffffff", "on-surface": "#171c20", "primary": "#000f22", "surface-container-high": "#e4e9ed", "background": "#f6faff", "on-error-container": "#93000a", "error-container": "#ffdad6" }, borderRadius: { DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px" }, spacing: { margin: "1.25rem", "space-sm": "0.5rem", "space-xl": "2.5rem", "space-xs": "0.25rem", "space-md": "1rem", "space-lg": "1.5rem", "margin-tablet": "2rem", "margin-desktop": "3rem" }, fontFamily: { "headline-md": ["Plus Jakarta Sans"], "label-sm": ["Plus Jakarta Sans"], "body-lg": ["Inter"], "display-lg-mobile": ["Plus Jakarta Sans"], "label-lg": ["Plus Jakarta Sans"], "body-sm": ["Inter"], "body-md": ["Inter"], "headline-sm": ["Plus Jakarta Sans"], "display-lg": ["Plus Jakarta Sans"], "label-md": ["Plus Jakarta Sans"] } } } };
+    </script>
+</head>
+
+<body class="bg-background font-body-md text-on-surface antialiased">
+    <header class="fixed top-0 left-0 right-0 z-50 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(10,37,64,0.04)]">
+        <div class="h-16 w-full px-margin md:px-margin-tablet lg:px-margin-desktop flex items-center justify-between">
+            <div class="flex items-center gap-space-md">
+                <img alt="Logo de Diario de Viajes" class="h-8 w-auto object-contain rounded-md" src="{% static 'viajes/logo.svg' %}" />
+                <span class="font-headline-sm text-headline-sm text-primary-container tracking-tight">Diario de Viajes</span>
+            </div>
+            <nav class="hidden md:flex items-center gap-space-xs">
+                <a class="px-space-md py-space-sm font-label-lg text-label-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors rounded-lg"
+                    href="{% url 'lista_viajes' %}">Mis Viajes</a>
+                <a class="px-space-md py-space-sm font-label-lg text-label-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors rounded-lg"
+                    href="{% if viaje_destacado %}{% url 'detalle_viaje' viaje_destacado.pk %}{% else %}{% url 'lista_viajes' %}{% endif %}">Detalle del Itinerario</a>
+                <a aria-current="page"
+                    class="px-space-md py-space-sm transition-colors bg-primary-container text-on-primary font-label-lg text-label-lg rounded-lg"
+                    href="{% url 'lista_gastos' %}">Gastos</a>
+                <a class="px-space-md py-space-sm font-label-lg text-label-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors rounded-lg"
+                    href="#">Explorar</a>
+            </nav>
+            <div class="flex items-center gap-space-md">
+                <form action="{% url 'lista_viajes' %}" method="get" role="search" class="flex items-center">
+                    <div class="relative">
+                        <span class="material-symbols-outlined pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[1.125rem] text-on-surface-variant">search</span>
+                        <input type="search" name="q" value="{{ search_query|default:'' }}"
+                            placeholder="Buscar viajes..."
+                            class="h-9 w-32 sm:w-44 md:w-56 rounded-lg bg-surface-container-low pl-8 pr-3 font-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-secondary/40" />
+                    </div>
+                </form>
+                {% if user.is_authenticated %}
+                <form action="{% url 'logout' %}" method="post">{% csrf_token %}<button class="font-label-sm text-label-sm text-secondary" type="submit">Salir</button></form>
+                <div class="flex items-center gap-space-xs pl-space-xs">
+                    <div class="flex h-8 w-8 items-center justify-center rounded-full bg-primary-container text-[0.625rem] font-bold text-on-primary ring-2 ring-secondary/20">
+                        {{ user.get_full_name|default:user.username|slice:":2"|upper }}
+                    </div>
+                </div>
+                {% else %}
+                <a class="font-label-sm text-label-sm text-secondary" href="{% url 'login' %}">Ingresar</a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <main class="w-full pt-16 bg-surface min-h-screen">
+        <div class="w-full px-margin md:px-margin-tablet lg:px-margin-desktop py-space-xl">
+            <div class="mb-space-lg">
+                <div class="inline-flex items-center gap-space-xs px-space-md py-space-xs rounded-full bg-secondary/10 text-secondary mb-space-sm">
+                    <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">receipt_long</span>
+                    <span class="font-label-sm text-label-sm uppercase tracking-wider">Control de presupuesto</span>
+                </div>
+                <h1 class="font-display-lg text-display-lg-mobile md:text-display-lg text-primary tracking-tight">Gastos y Presupuestos</h1>
+                <p class="mt-space-xs font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
+                    Revisa todos los gastos calculados a partir de las actividades registradas en cada viaje. Filtra por viaje, categoría o busca por concepto.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-space-sm mb-space-lg">
+                <div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex items-center gap-space-sm">
+                    <div class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-secondary">
+                        <span class="material-symbols-outlined">payments</span>
+                    </div>
+                    <div>
+                        <span class="font-label-sm text-label-sm text-on-surface-variant block uppercase">Total filtrado</span>
+                        <span class="font-headline-sm text-headline-sm text-primary">{{ total_gastado_formateado }} CLP</span>
+                    </div>
+                </div>
+                <div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex items-center gap-space-sm">
+                    <div class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-secondary">
+                        <span class="material-symbols-outlined">checklist</span>
+                    </div>
+                    <div>
+                        <span class="font-label-sm text-label-sm text-on-surface-variant block uppercase">Actividades</span>
+                        <span class="font-headline-sm text-headline-sm text-primary">{{ cantidad_actividades }}</span>
+                    </div>
+                </div>
+                <div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex items-center gap-space-sm">
+                    <div class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-secondary">
+                        <span class="material-symbols-outlined">flight_takeoff</span>
+                    </div>
+                    <div>
+                        <span class="font-label-sm text-label-sm text-on-surface-variant block uppercase">Viajes</span>
+                        <span class="font-headline-sm text-headline-sm text-primary">{{ cantidad_viajes }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <form method="get" class="bg-surface-container-lowest rounded-xl shadow-sm p-space-md mb-space-lg grid grid-cols-1 md:grid-cols-4 gap-space-sm items-end">
+                <label class="grid gap-1">
+                    <span class="font-label-md text-label-md text-primary">Viaje</span>
+                    <select name="viaje" class="h-10 rounded-lg bg-surface-container-low px-space-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary/40">
+                        <option value="">Todos los viajes</option>
+                        {% for v in viajes_disponibles %}
+                        <option value="{{ v.pk }}" {% if viaje_seleccionado == v.pk %}selected{% endif %}>{{ v.titulo }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="grid gap-1">
+                    <span class="font-label-md text-label-md text-primary">Categoría</span>
+                    <select name="categoria" class="h-10 rounded-lg bg-surface-container-low px-space-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary/40">
+                        <option value="">Todas las categorías</option>
+                        {% for c in categorias %}
+                        <option value="{{ c }}" {% if categoria_seleccionada|lower == c|lower %}selected{% endif %}>{{ c }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="grid gap-1">
+                    <span class="font-label-md text-label-md text-primary">Buscar</span>
+                    <input type="search" name="q" value="{{ busqueda }}" placeholder="Concepto, ubicación..."
+                        class="h-10 rounded-lg bg-surface-container-low px-space-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-secondary/40" />
+                </label>
+                <div class="flex items-center gap-space-xs">
+                    <button type="submit" class="flex-1 h-10 rounded-lg bg-primary-container text-on-primary font-label-lg text-label-lg hover:bg-secondary transition-colors flex items-center justify-center gap-1">
+                        <span class="material-symbols-outlined text-[1.125rem]">filter_alt</span>
+                        Filtrar
+                    </button>
+                    <a href="{% url 'lista_gastos' %}" class="h-10 px-space-sm rounded-lg bg-surface-container-low text-on-surface-variant font-label-md text-label-md hover:bg-surface-container transition-colors flex items-center justify-center">
+                        Limpiar
+                    </a>
+                </div>
+            </form>
+
+            <section class="bg-surface-container-lowest rounded-xl shadow-md overflow-hidden">
+                <div class="flex items-center justify-between p-space-md border-b border-surface-container-high">
+                    <h2 class="font-headline-sm text-headline-sm text-primary">Detalle de gastos</h2>
+                    <span class="font-label-sm text-label-sm text-on-surface-variant">{{ cantidad_actividades }} resultado{{ cantidad_actividades|pluralize:"s" }}</span>
+                </div>
+                {% if actividades %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-left">
+                        <thead class="bg-surface-container-low text-on-surface-variant font-label-md text-label-md uppercase tracking-wider">
+                            <tr>
+                                <th class="px-space-md py-space-sm">Fecha</th>
+                                <th class="px-space-md py-space-sm">Viaje</th>
+                                <th class="px-space-md py-space-sm">Categoría</th>
+                                <th class="px-space-md py-space-sm">Actividad</th>
+                                <th class="px-space-md py-space-sm text-right">Monto</th>
+                            </tr>
+                        </thead>
+                        <tbody class="font-body-md text-body-md">
+                            {% for actividad in actividades %}
+                            <tr class="border-t border-surface-container-high hover:bg-surface-container-low/60">
+                                <td class="px-space-md py-space-sm whitespace-nowrap text-on-surface-variant">
+                                    {% if actividad.fecha %}{{ actividad.fecha|date:"d M Y" }}
+                                    {% elif actividad.dia %}{{ actividad.dia.fecha|date:"d M Y" }}
+                                    {% else %}—{% endif %}
+                                </td>
+                                <td class="px-space-md py-space-sm text-primary">
+                                    {% if actividad.viaje %}
+                                        <a class="hover:text-secondary" href="{% url 'detalle_viaje' actividad.viaje.pk %}">{{ actividad.viaje.titulo }}</a>
+                                    {% elif actividad.dia %}
+                                        <a class="hover:text-secondary" href="{% url 'detalle_viaje' actividad.dia.viaje.pk %}">{{ actividad.dia.viaje.titulo }}</a>
+                                    {% else %}—{% endif %}
+                                </td>
+                                <td class="px-space-md py-space-sm text-on-surface-variant">{{ actividad.categoria|default:"Sin categoría" }}</td>
+                                <td class="px-space-md py-space-sm">
+                                    <span class="font-label-md text-label-md text-primary block">{{ actividad.nombre }}</span>
+                                    {% if actividad.ubicacion %}<span class="text-on-surface-variant font-body-sm text-body-sm">{{ actividad.ubicacion }}</span>{% endif %}
+                                </td>
+                                <td class="px-space-md py-space-sm text-right font-label-lg text-label-lg text-secondary whitespace-nowrap">{{ actividad.costo_formateado }} CLP</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="border-t border-surface-container-high bg-surface-container-low">
+                                <td class="px-space-md py-space-sm font-label-lg text-label-lg text-primary" colspan="4">Total</td>
+                                <td class="px-space-md py-space-sm font-headline-sm text-headline-sm text-secondary text-right whitespace-nowrap">{{ total_gastado_formateado }} CLP</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                {% else %}
+                <div class="p-space-xl flex flex-col items-center justify-center text-center">
+                    <div class="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center text-outline mb-space-md">
+                        <span class="material-symbols-outlined text-3xl">receipt_long</span>
+                    </div>
+                    <h3 class="font-headline-sm text-headline-sm text-primary mb-space-xs">Sin gastos registrados</h3>
+                    <p class="font-body-md text-body-md text-on-surface-variant max-w-md">
+                        Aún no hay actividades con costo que coincidan con los filtros aplicados. Agrega actividades a tus viajes para ver los gastos aquí.
+                    </p>
+                </div>
+                {% endif %}
+            </section>
+        </div>
+    </main>
+
+    <footer class="w-full bg-surface-container-lowest shadow-[0_-1px_8px_rgba(10,37,64,0.03)] py-space-xl">
+        <div class="w-full px-margin md:px-margin-tablet lg:px-margin-desktop flex flex-col md:flex-row items-center justify-between gap-space-md">
+            <div class="flex items-center gap-space-sm">
+                <img alt="Diario de Viajes Logo" class="h-6 w-auto object-contain rounded-md" src="{% static 'viajes/logo.svg' %}" />
+                <span class="font-label-md text-label-md text-on-surface-variant">© 2024 Diario de Viajes. Cuaderno de bitácora y memorias.</span>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

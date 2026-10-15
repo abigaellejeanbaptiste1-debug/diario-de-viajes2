@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-{% load static %}
+{% load static l10n %}
 <html lang="es">
 
 <head>
@@ -82,12 +82,17 @@
                     class="px-space-md py-space-sm font-label-lg text-label-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors rounded-lg"
                     data-path="detalle-del-itinerario" href="{% if viajes %}{% url 'detalle_viaje' viajes.0.pk %}{% else %}{% url 'lista_viajes' %}{% endif %}">Detalle del Itinerario</a><a
                     class="px-space-md py-space-sm font-label-lg text-label-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors rounded-lg"
-                    data-path="gastos" href="#">Gastos</a><a
+                    data-path="gastos" href="{% url 'lista_gastos' %}">Gastos</a><a
                     class="px-space-md py-space-sm font-label-lg text-label-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors rounded-lg"
                     data-path="explorar" href="#">Explorar</a></nav>
-            <div class="flex items-center gap-space-md"><button aria-label="Buscar viajes"
-                    class="p-space-xs text-on-surface-variant hover:text-primary transition-colors" type="button"><span
-                        class="material-symbols-outlined">search</span></button><button aria-label="Notificaciones"
+            <div class="flex items-center gap-space-md"><form action="{% url 'lista_viajes' %}" method="get" role="search" class="flex items-center">
+                    <div class="relative">
+                        <span class="material-symbols-outlined pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[1.125rem] text-on-surface-variant">search</span>
+                        <input type="search" name="q" value="{{ search_query|default:'' }}" aria-label="Buscar viajes"
+                            placeholder="Buscar viajes..."
+                            class="h-9 w-32 sm:w-44 md:w-56 rounded-lg bg-surface-container-low pl-8 pr-3 font-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-secondary/40" />
+                    </div>
+                </form><button aria-label="Notificaciones"
                     class="p-space-xs text-on-surface-variant hover:text-primary transition-colors" type="button"><span
                         class="material-symbols-outlined">notifications</span></button>
                 {% if user.is_authenticated %}
@@ -262,7 +267,7 @@
                                         <input
                                             class="w-full h-12 pl-10 pr-space-sm bg-surface-container-low rounded-lg text-primary font-body-md focus:outline-none focus:ring-2 focus:ring-secondary/40 shadow-inner"
                                             id="id_fecha_inicio" name="fecha_inicio" required="" type="date"
-                                            value="{{ form.fecha_inicio.value|date:'Y-m-d'|default_if_none:'' }}" />
+                                            value="{% if form.is_bound %}{{ form.fecha_inicio.value|default_if_none:'' }}{% else %}{{ form.fecha_inicio.value|date:'Y-m-d' }}{% endif %}" />
                                     </div>
                                 </div>
                                 <div>
@@ -276,7 +281,7 @@
                                         <input
                                             class="w-full h-12 pl-10 pr-space-sm bg-surface-container-low rounded-lg text-primary font-body-md focus:outline-none focus:ring-2 focus:ring-secondary/40 shadow-inner"
                                             id="id_fecha_fin" name="fecha_fin" required="" type="date"
-                                            value="{{ form.fecha_fin.value|date:'Y-m-d'|default_if_none:'' }}" />
+                                            value="{% if form.is_bound %}{{ form.fecha_fin.value|default_if_none:'' }}{% else %}{{ form.fecha_fin.value|date:'Y-m-d' }}{% endif %}" />
                                     </div>
                                 </div>
                             </div>
@@ -292,7 +297,7 @@
                                         class="absolute left-space-md top-1/2 -translate-y-1/2 font-headline-sm text-headline-sm text-secondary">$</span>
                                     <input
                                         class="w-full h-12 pl-10 pr-space-md bg-surface-container-low rounded-lg text-primary placeholder-outline font-headline-sm text-headline-sm focus:outline-none focus:ring-2 focus:ring-secondary/40 shadow-inner"
-                                        id="id_presupuesto" min="1" name="presupuesto" value="{{ form.presupuesto.value|default_if_none:'' }}" placeholder="2800000" required=""
+                                        id="id_presupuesto" min="1" name="presupuesto" value="{{ form.presupuesto.value|default_if_none:''|unlocalize }}" placeholder="2800000" required=""
                                         step="1" type="number" />
                                 </div>
                                 <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Cálculo proyectado
@@ -350,6 +355,15 @@
                                 </button>
                             </div>
                         </div>
+                        {% if search_query %}
+                        <div class="rounded-lg bg-secondary-fixed/50 p-space-sm text-primary flex items-center justify-between flex-wrap gap-space-sm" role="status">
+                            <span>
+                                {% if viajes.paginator.count %}{{ viajes.paginator.count }} resultado{{ viajes.paginator.count|pluralize }}{% else %}Sin resultados{% endif %}
+                                para «{{ search_query }}»
+                            </span>
+                            <a class="font-label-md text-label-md text-secondary hover:text-primary" href="{% url 'lista_viajes' %}">Limpiar búsqueda</a>
+                        </div>
+                        {% endif %}
                         <div class="space-y-space-md" id="trips-container">
                             {% for message in messages %}
                             <div class="rounded-lg bg-secondary-fixed/50 p-space-sm text-primary" role="status">{{ message }}</div>
@@ -412,11 +426,11 @@
                             <nav class="flex items-center justify-between rounded-xl bg-surface-container-lowest p-space-md"
                                 aria-label="Paginación de viajes">
                                 {% if viajes.has_previous %}
-                                <a class="text-secondary hover:text-primary" href="?page={{ viajes.previous_page_number }}">← Anterior</a>
+                                <a class="text-secondary hover:text-primary" href="?page={{ viajes.previous_page_number }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}">← Anterior</a>
                                 {% else %}<span class="text-outline">← Anterior</span>{% endif %}
                                 <span class="font-label-md text-label-md">Página {{ viajes.number }} de {{ viajes.paginator.num_pages }}</span>
                                 {% if viajes.has_next %}
-                                <a class="text-secondary hover:text-primary" href="?page={{ viajes.next_page_number }}">Siguiente →</a>
+                                <a class="text-secondary hover:text-primary" href="?page={{ viajes.next_page_number }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}">Siguiente →</a>
                                 {% else %}<span class="text-outline">Siguiente →</span>{% endif %}
                             </nav>
                             {% endif %}
@@ -592,13 +606,18 @@
                                 class="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center text-outline mb-space-md">
                                 <span class="material-symbols-outlined text-3xl">luggage</span>
                             </div>
-                            <h3 class="font-headline-sm text-headline-sm text-primary mb-space-xs">No hay viajes
-                                registrados aún</h3>
+                            <h3 class="font-headline-sm text-headline-sm text-primary mb-space-xs">{% if search_query %}No se encontró ningún viaje{% else %}No hay viajes
+                                registrados aún{% endif %}</h3>
+                            {% if search_query %}
+                            <p class="font-body-md text-body-md text-on-surface-variant max-w-sm mb-space-md">Prueba con otro título, ciudad o país.</p>
+                            <a class="font-label-md text-label-md text-secondary hover:text-primary" href="{% url 'lista_viajes' %}">Ver todos los viajes</a>
+                            {% else %}
                             <p class="font-body-md text-body-md text-on-surface-variant max-w-sm mb-space-md">
                                 Comienza usando el formulario a tu izquierda para crear tu primer itinerario y bitácora
                                 de viaje.
                             </p>
                             <span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Usa el formulario para crear tu primer viaje.</span>
+                            {% endif %}
                         </div>
                     </section>
                     {% endif %}

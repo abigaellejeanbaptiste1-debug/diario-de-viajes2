@@ -26,10 +26,17 @@ from .money import format_clp
 from .models import Actividad, Dia, Photo, Viaje
 
 
-def _render_viajes(request, form=None, editing=False, viaje_en_edicion=None):
+def _render_viajes(request, form=None, editing=False, viaje_en_edicion=None, search_query=""):
     if form is None:
         form = ViajeForm()
     viajes = Viaje.objects.order_by("-fecha_inicio", "-pk")
+    if search_query:
+        viajes = viajes.filter(
+            Q(titulo__icontains=search_query)
+            | Q(ciudad__icontains=search_query)
+            | Q(pais__icontains=search_query)
+            | Q(descripcion__icontains=search_query)
+        )
     if not request.user.has_perm("viajes.view_viaje"):
         viajes = viajes.filter(publico=True)
     page = Paginator(viajes, 10).get_page(request.GET.get("page"))
@@ -42,6 +49,7 @@ def _render_viajes(request, form=None, editing=False, viaje_en_edicion=None):
             "viajes": page,
             "editing": editing,
             "viaje_en_edicion": viaje_en_edicion,
+            "search_query": search_query,
             "dias_viaje_en_edicion": (
                 viaje_en_edicion.dias.prefetch_related(
                     Prefetch(
@@ -111,7 +119,20 @@ def lista_viajes(request):
             return redirect("lista_viajes")
         return _render_viajes(request, form=form)
 
-    return _render_viajes(request)
+    search_query = request.GET.get("q", "").strip()
+    if search_query:
+        coincidencias = Viaje.objects.filter(
+            Q(titulo__icontains=search_query)
+            | Q(ciudad__icontains=search_query)
+            | Q(pais__icontains=search_query)
+            | Q(descripcion__icontains=search_query)
+        )
+        if not request.user.has_perm("viajes.view_viaje"):
+            coincidencias = coincidencias.filter(publico=True)
+        unicos = list(coincidencias.values_list("pk", flat=True)[:2])
+        if len(unicos) == 1:
+            return redirect("detalle_viaje", viaje_id=unicos[0])
+    return _render_viajes(request, search_query=search_query)
 
 
 @permission_required("viajes.change_viaje", login_url="login")
@@ -384,3 +405,66 @@ def cerrar_sesion(request):
     logout(request)
     messages.success(request, "Sesión cerrada correctamente.")
     return redirect("lista_viajes")
+
+
+def lista_gastos(request):
+    """Resumen global de gastos calculados a partir de las actividades."""
+    puede_ver_todo = request.user.has_perm("viajes.view_viaje")
+
+    actividades_qs = (
+        Actividad.objects.select_related("viaje", "dia", "dia__viaje")
+        .order_by("-fecha", "-dia__fecha", "hora", "-pk")
+    )
+    viajes_qs = Viaje.objects.order_by("-fecha_inicio", "-pk")
+
+    if not puede_ver_todo:
+        actividades_qs = actividades_qs.filter(
+            Q(viaje__publico=True) | Q(dia__viaje__publico=True)
+        )
+        viajes_qs = viajes_qs.filter(publico=True)
+
+    viaje_param = request.GET.get("viaje", "").strip()
+    viaje_seleccionado = int(viaje_param) if viaje_param.isdigit() else None
+    categoria = request.GET.get("categoria", "").strip()
+    q = request.GET.get("q", "").strip()
+
+    if viaje_seleccionado:
+        actividades_qs = actividades_qs.filter(
+            Q(viaje_id=viaje_seleccionado) | Q(dia__viaje_id=viaje_seleccionado)
+        )
+    if categoria:
+        actividades_qs = actividades_qs.filter(categoria__iexact=categoria)
+    if q:
+        actividades_qs = actividades_qs.filter(
+            Q(nombre__icontains=q)
+            | Q(descripcion__icontains=q)
+            | Q(ubicacion__icontains=q)
+            | Q(categoria__icontains=q)
+        )
+
+    total = actividades_qs.aggregate(total=Sum("costo"))["total"] or 0
+    categorias = (
+        Actividad.objects.exclude(categoria__isnull=True)
+        .exclude(categoria="")
+        .values_list("categoria", flat=True)
+        .distinct()
+        .order_by("categoria")
+    )
+
+    return render(
+        request,
+        "viajes/gastos.html",
+        {
+            "actividades": actividades_qs,
+            "total_gastado_formateado": format_clp(total),
+            "cantidad_actividades": actividades_qs.count(),
+            "viajes_disponibles": viajes_qs,
+            "categorias": categorias,
+            "viaje_seleccionado": viaje_seleccionado,
+            "categoria_seleccionada": categoria,
+            "busqueda": q,
+            "viaje_destacado": viajes_qs.first(),
+            "search_query": q,
+            "cantidad_viajes": viajes_qs.count(),
+        },
+    )
